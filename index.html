@@ -231,9 +231,9 @@
     background:#fff;
   }
 
-  .table-scroll{overflow-x:hidden;}
+  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
 
-  table{width:100%;table-layout:fixed;border-collapse:collapse;}
+  table{width:100%;min-width:720px;table-layout:fixed;border-collapse:collapse;}
   thead th{
     background:var(--accent);
     color:#fff;
@@ -256,14 +256,14 @@
   tbody td[contenteditable="true"]{outline:none;}
   tbody td[contenteditable="true"]:focus{background:var(--accent-soft);}
   tbody tr:nth-child(even){background:#f6f8fc;}
-  .col-name{width:13%;cursor:pointer;}
-  .col-day{width:8%;cursor:pointer;}
-  .col-time{width:11%;}
-  .col-place{width:13%;cursor:pointer;}
-  .col-round{width:8%;cursor:pointer;}
+  .col-name{width:12%;cursor:pointer;}
+  .col-day{width:6%;cursor:pointer;}
+  .col-time{width:10%;}
+  .col-place{width:12%;cursor:pointer;}
+  .col-round{width:6%;cursor:pointer;}
   .col-paid{width:14%;cursor:pointer;}
   .col-end{width:14%;}
-  .col-fee{width:14%;}
+  .col-fee{width:13%;}
   .picker-text{display:block;min-height:20px;}
   .col-del{width:44px;text-align:center;}
 
@@ -498,6 +498,18 @@
     h1{font-size:19px;}
     .sync-status{position:static;display:inline-block;margin-top:6px;}
     .title-row{flex-direction:column;align-items:center;}
+    .week-title{font-size:18px;min-width:100%;order:1;}
+    .week-range-inline{font-size:12.5px;order:2;}
+    .week-nav{order:3;margin-left:auto;}
+    .week-nav-btn{padding:4px 10px;font-size:18px;}
+    .week-planner{grid-template-columns:repeat(auto-fit, minmax(64px, 1fr));gap:6px;}
+    .planner-day-head{font-size:11.5px;}
+    .planner-entry{font-size:11px;}
+    thead th{padding:6px 3px;}
+    tbody td{padding-left:3px;padding-right:3px;}
+    table{min-width:0;}
+    .attend-toggle{width:22px;height:22px;margin-right:3px;}
+    .fee-unit{font-size:11px;margin-left:1px;}
     .table-footer-row{flex-direction:column;}
     .table-footer-row button{width:100%;}
     .modal-box{padding:12px;margin-top:8px;}
@@ -860,7 +872,7 @@
   // size changes or the table's row count/content changes meaningfully.
   let autoFontSize = 18;
   let autoRowPadding = 14;
-  const AUTOFIT_SIZES = [26, 24, 22, 20, 18, 17, 16, 15, 14, 13, 12, 11];
+  const AUTOFIT_SIZES = [26, 24, 22, 20, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9];
 
   function applyLiveSizing(fontPx, padPx){
     document.documentElement.style.setProperty('--cell-font', fontPx + 'px');
@@ -1093,8 +1105,7 @@
     if (!v) return emptyLabel !== undefined ? emptyLabel : '미납';
     const d = new Date(v + 'T00:00:00');
     if (isNaN(d)) return v;
-    const days = ['일','월','화','수','목','금','토'];
-    return `${d.getMonth() + 1}/${d.getDate()}(${days[d.getDay()]})`;
+    return `${d.getMonth() + 1}/${d.getDate()}`;
   }
 
   // Given the row's fixed weekday and its current round (1~5), figure out
