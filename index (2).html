@@ -1,0 +1,1635 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>축구교실 주간 시간표</title>
+</head>
+<body>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
+  import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDhixzMFjuydP-EQbqQsdkM3OWA0e504AM",
+    authDomain: "soccer-schedule-8f27b.firebaseapp.com",
+    projectId: "soccer-schedule-8f27b",
+    storageBucket: "soccer-schedule-8f27b.firebasestorage.app",
+    messagingSenderId: "124179804938",
+    appId: "1:124179804938:web:64439993e82608e07e00f3"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const stateRef = doc(db, "soccer", "state");
+
+  window._fbSave = function(state){
+    return setDoc(stateRef, state);
+  };
+  window._fbSubscribe = function(callback){
+    return onSnapshot(stateRef, function(snap){
+      callback(snap.exists() ? snap.data() : null);
+    }, function(err){
+      console.error('firestore sync error', err);
+      window.dispatchEvent(new CustomEvent('fb-error'));
+    });
+  };
+
+  window.dispatchEvent(new CustomEvent('fb-ready'));
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap">
+<style>
+  :root{
+    --ink:#14171c;
+    --sub:#6b7280;
+    --line:#d7deea;
+    --bg:#ffffff;
+    --panel:#eef1f9;
+    --accent:#1e3a8a;
+    --accent-dark:#132a66;
+    --accent-soft:#e2e7f7;
+    --danger:#c0392b;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body,.app{
+    font-family:'Noto Sans KR',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    font-weight:400;
+    color:var(--ink);
+    background:var(--bg);
+  }
+  .app{max-width:900px;margin:0 auto;padding:20px 16px 60px;}
+
+  .title-row{display:flex;align-items:baseline;justify-content:center;gap:10px;flex-wrap:wrap;position:relative;}
+  h1{
+    font-size:24px;
+    font-weight:700;
+    margin:4px 0 2px;
+    letter-spacing:-0.02em;
+    text-align:center;
+    width:100%;
+  }
+  .sync-status{
+    font-size:13px;
+    color:var(--sub);
+    padding:4px 10px;
+    border:1px solid var(--line);
+    white-space:nowrap;
+    position:absolute;
+    right:0;
+    top:4px;
+  }
+  .sync-status.ok{color:var(--accent);border-color:var(--accent-soft);background:var(--accent-soft);}
+  .sync-status.err{color:var(--danger);}
+
+  .lead{
+    font-size:14px;
+    color:var(--sub);
+    margin:0 0 20px;
+    line-height:1.5;
+  }
+
+  .week-planner{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(84px, 1fr));
+    gap:8px;
+    margin:14px 0 22px;
+  }
+  .planner-day{
+    border:1px solid var(--line);
+    padding:8px 6px;
+    min-height:56px;
+  }
+  .planner-day-head{
+    font-weight:700;
+    font-size:13px;
+    color:var(--accent);
+    text-align:center;
+    margin:0 0 6px;
+    padding-bottom:4px;
+    border-bottom:1px solid var(--line);
+  }
+  .planner-entry{
+    font-size:12px;
+    line-height:1.35;
+    margin-bottom:6px;
+    text-align:center;
+  }
+  .planner-time{display:block;font-weight:600;color:var(--ink);}
+  .planner-name{display:block;color:var(--sub);}
+  .planner-empty{
+    font-size:12px;
+    color:var(--sub);
+    text-align:center;
+    padding-top:6px;
+  }
+
+  .default-fee-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin:0 0 16px;
+  }
+  .default-fee-label{
+    font-size:13px;
+    font-weight:600;
+    color:var(--sub);
+  }
+  .default-fee-row input{
+    width:70px;
+    border:1px solid var(--line);
+    padding:8px 10px;
+    font-size:16px;
+    font-family:inherit;
+  }
+  .default-fee-row input:focus{outline:none;background:var(--accent-soft);}
+  .default-fee-unit{font-size:13px;color:var(--sub);}
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:0;
+    padding:16px;
+    margin-bottom:16px;
+  }
+  .panel-title{
+    font-size:14px;
+    font-weight:600;
+    color:var(--sub);
+    margin:0 0 10px;
+  }
+
+  .btn-row{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;}
+  button{
+    -webkit-appearance:none;
+    appearance:none;
+    border:none;
+    cursor:pointer;
+    font-family:inherit;
+    font-size:17px;
+    font-weight:600;
+    border-radius:0;
+    padding:12px 18px;
+    min-height:46px;
+    touch-action:manipulation;
+  }
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:active{background:var(--accent-dark);}
+  .btn-secondary{background:#fff;color:var(--ink);border:1px solid var(--line);}
+  .btn-secondary:active{background:var(--accent-soft);}
+  .btn-ghost{background:transparent;color:var(--sub);border:1px solid var(--line);}
+
+  .sheet-head{
+    margin:28px 0 4px;
+  }
+  .week-title-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .week-title{
+    font-size:22px;
+    font-weight:700;
+    border:none;
+    border-bottom:2px solid var(--accent);
+    padding:4px 2px 6px;
+    background:transparent;
+    flex:1;
+    min-width:140px;
+  }
+  .week-title:focus{outline:none;}
+  .week-range-inline{
+    font-size:14px;
+    font-weight:600;
+    color:var(--accent);
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+  .week-nav{
+    display:flex;
+    gap:6px;
+    flex-shrink:0;
+  }
+  .week-nav-btn{
+    background:#fff;
+    border:1px solid var(--line);
+    color:var(--accent);
+    font-size:20px;
+    font-weight:700;
+    padding:4px 14px;
+    min-height:40px;
+    line-height:1;
+  }
+  .week-nav-btn:active{background:var(--accent-soft);}
+
+  .sheet{
+    border:1px solid var(--line);
+    border-radius:0;
+    overflow:hidden;
+    background:#fff;
+  }
+
+  .table-scroll{overflow-x:hidden;}
+
+  table{width:100%;table-layout:fixed;border-collapse:collapse;}
+  thead th{
+    background:var(--accent);
+    color:#fff;
+    font-size:var(--cell-font, 15px);
+    font-weight:600;
+    text-align:left;
+    padding:10px 8px;
+    white-space:normal;
+    word-break:keep-all;
+  }
+  tbody td{
+    padding:var(--cell-py, 20px) 8px;
+    font-size:var(--cell-font, 18px);
+    border-top:1px solid var(--line);
+    line-height:1.4;
+    min-width:0;
+    overflow-wrap:break-word;
+    word-break:break-word;
+  }
+  tbody td[contenteditable="true"]{outline:none;}
+  tbody td[contenteditable="true"]:focus{background:var(--accent-soft);}
+  tbody tr:nth-child(even){background:#f6f8fc;}
+  .col-name{width:13%;cursor:pointer;}
+  .col-day{width:8%;cursor:pointer;}
+  .col-time{width:11%;}
+  .col-place{width:13%;cursor:pointer;}
+  .col-round{width:8%;cursor:pointer;}
+  .col-paid{width:14%;cursor:pointer;}
+  .col-end{width:14%;}
+  .col-fee{width:14%;}
+  .picker-text{display:block;min-height:20px;}
+  .col-del{width:44px;text-align:center;}
+
+  .attend-toggle{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:28px;
+    height:28px;
+    min-height:0;
+    padding:0;
+    margin-right:6px;
+    font-size:15px;
+    font-weight:700;
+    background:#fff;
+    border:1px solid var(--line);
+    color:var(--sub);
+    vertical-align:middle;
+    -webkit-touch-callout:none;
+    -webkit-user-select:none;
+    user-select:none;
+    touch-action:none;
+    outline:none;
+  }
+  .attend-toggle:focus{outline:none;}
+  .col-fee[data-attended="true"]{background:var(--accent-soft);}
+  .col-fee[data-attended="true"] .attend-toggle{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .col-fee[data-attended="false"] .attend-toggle{background:#fff;color:var(--danger);border-color:var(--danger);}
+  .col-fee[data-attended="false"] .fee-amount{color:var(--danger);text-decoration:line-through;}
+  .fee-amount{display:inline-block;min-width:16px;outline:none;}
+  .fee-unit{font-size:14px;color:var(--sub);margin-left:3px;}
+
+  .del-btn{
+    background:transparent;
+    border:none;
+    color:var(--sub);
+    font-size:18px;
+    padding:6px;
+    min-height:32px;
+    border-radius:0;
+  }
+  .del-btn:active{background:#f1e2e0;color:var(--danger);}
+
+  .add-row-btn{
+    display:block;
+    width:100%;
+    background:#fff;
+    border:none;
+    border-top:1px dashed var(--line);
+    color:var(--accent);
+    font-size:16px;
+    font-weight:600;
+    padding:12px;
+    text-align:center;
+  }
+  .add-row-btn:active{background:var(--accent-soft);}
+
+  .fee-summary{
+    border-top:2px solid var(--accent);
+    padding:12px 16px;
+    background:#fafbfd;
+  }
+  .fee-summary-row{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    font-size:16px;
+    font-weight:600;
+    padding:4px 0;
+  }
+  .fee-summary-row.deduct{color:var(--accent);}
+
+  .table-footer-row{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    margin-top:10px;
+    flex-wrap:wrap;
+  }
+
+  /* Picker popover (shared by name / day / place / note) */
+  .picker-popover{
+    position:fixed;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    z-index:1000;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:0;
+    box-shadow:0 8px 24px rgba(16,24,40,0.16);
+    width:min(92vw, 380px);
+    max-height:min(70vh, 480px);
+    display:none;
+    flex-direction:column;
+  }
+  .picker-popover.open{display:flex;}
+  .picker-list{flex:1;min-height:0;max-height:min(50vh, 340px);overflow-y:auto;}
+  .picker-option{
+    display:block;
+    width:100%;
+    text-align:left;
+    background:#fff;
+    border:none;
+    border-bottom:1px solid var(--line);
+    padding:11px 14px;
+    font-size:16px;
+    color:var(--ink);
+  }
+  .picker-option:active{background:var(--accent-soft);}
+  .picker-option .del-option{
+    float:right;
+    color:var(--sub);
+    font-size:14px;
+  }
+  .picker-add{
+    display:flex;
+    border-top:1px solid var(--line);
+  }
+  .picker-add input{
+    flex:1;
+    min-width:0;
+    border:none;
+    padding:11px 12px;
+    font-size:16px;
+    font-family:inherit;
+  }
+  .picker-add input:focus{outline:none;background:var(--accent-soft);}
+  .picker-add button{
+    background:var(--accent);
+    color:#fff;
+    padding:0 16px;
+    font-size:14px;
+    min-height:0;
+    flex:0 0 auto;
+    white-space:nowrap;
+  }
+  .popover-backdrop{
+    position:fixed;inset:0;z-index:999;display:none;
+  }
+  .popover-backdrop.open{display:block;}
+
+  /* Custom date picker (replaces native <input type=date> for reliable iPad support) */
+  .date-popover{padding:14px;}
+  .dp-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .dp-label{font-size:16px;font-weight:700;color:var(--ink);}
+  .dp-nav{
+    background:transparent;border:none;font-size:24px;line-height:1;
+    color:var(--accent);padding:4px 12px;min-height:0;font-weight:700;
+  }
+  .dp-nav:active{color:var(--accent-dark);}
+  .dp-weekdays{display:grid;grid-template-columns:repeat(7, 1fr);gap:4px;margin-bottom:4px;}
+  .dp-weekday{font-size:12px;text-align:center;color:var(--sub);font-weight:600;}
+  .dp-grid{display:grid;grid-template-columns:repeat(7, 1fr);gap:4px;}
+  .dp-blank{visibility:hidden;}
+  .dp-day{
+    background:#fff;border:1px solid var(--line);
+    font-size:15px;padding:9px 0;min-height:40px;color:var(--ink);
+    font-weight:500;
+  }
+  .dp-day:active{background:var(--accent-soft);}
+  .dp-day.dp-selected{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .dp-footer{margin-top:12px;}
+  .dp-footer button{width:100%;}
+
+  .row-height-panel{margin-bottom:16px;}
+  .row-height-control{display:flex;align-items:center;gap:12px;}
+  .row-height-control input[type="range"]{
+    flex:1;
+    height:36px;
+    accent-color:var(--accent);
+  }
+  .row-height-value{
+    font-size:14px;
+    font-weight:600;
+    color:var(--accent);
+    min-width:44px;
+    text-align:right;
+  }
+
+  /* Edit modal */
+  .modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(20,23,28,0.55);
+    z-index:900;
+    display:none;
+    align-items:flex-start;
+    justify-content:center;
+    padding:24px 12px;
+    overflow-y:auto;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal-box{
+    background:#fff;
+    width:100%;
+    max-width:780px;
+    margin-top:16px;
+    margin-bottom:16px;
+    padding:18px;
+    border:1px solid var(--line);
+  }
+  .modal-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    margin-bottom:14px;
+  }
+  .modal-close{
+    background:transparent;
+    border:none;
+    font-size:26px;
+    line-height:1;
+    padding:4px 8px;
+    min-height:0;
+    color:var(--sub);
+  }
+  .modal-actions{display:flex;gap:10px;margin-top:16px;}
+  .modal-actions button{flex:1;}
+  .pdf-modal-box{max-width:900px;}
+  .pdf-preview-scroll{
+    max-height:60vh;
+    overflow:auto;
+    border:1px solid var(--line);
+  }
+  .pdf-preview-scroll .sheet{border:none;}
+
+  /* Mobile tweaks */
+  @media (max-width: 480px){
+    .app{padding:14px 10px 40px;}
+    h1{font-size:19px;}
+    .sync-status{position:static;display:inline-block;margin-top:6px;}
+    .title-row{flex-direction:column;align-items:center;}
+    .table-footer-row{flex-direction:column;}
+    .table-footer-row button{width:100%;}
+    .modal-box{padding:12px;margin-top:8px;}
+  }
+
+  /* Print / PDF capture styling */
+  @media print{
+    .no-print{display:none !important;}
+    body{background:#fff;}
+    .app{max-width:none;padding:0;margin:0;}
+    .sheet{border:none;border-radius:0;}
+    @page{size:A4;margin:14mm;}
+  }
+</style>
+
+<div class="app">
+  <div class="title-row">
+    <h1>축구교실 주간 시간표</h1>
+    <span class="sync-status no-print" id="syncStatus">연결 중...</span>
+  </div>
+
+  <div class="default-fee-row no-print">
+    <span class="default-fee-label">학생 기본 수업료</span>
+    <input type="number" id="defaultFeeInput" min="0" step="1" value="50">
+    <span class="default-fee-unit">불</span>
+  </div>
+
+  <div class="sheet-head">
+    <div class="week-title-row">
+      <input class="week-title" id="weekTitle" value="이번 주 축구교실 시간표">
+      <span class="week-range-inline" id="weekRange"></span>
+      <div class="week-nav no-print">
+        <button type="button" class="week-nav-btn" id="prevWeekBtn" aria-label="이전 주">&#8249;</button>
+        <button type="button" class="week-nav-btn" id="nextWeekBtn" aria-label="다음 주">&#8250;</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="week-planner no-print" id="weekPlanner"></div>
+
+  <div class="sheet" id="sheet">
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-name">이름</th>
+            <th class="col-day">요일</th>
+            <th class="col-time">시간</th>
+            <th class="col-place">장소</th>
+            <th class="col-round">회차</th>
+            <th class="col-paid">납부일</th>
+            <th class="col-end">5회 종료일</th>
+            <th class="col-fee">수업료</th>
+            <th class="col-del no-print"></th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+    <button class="add-row-btn no-print" id="addRowBtn">+ 행 추가</button>
+    <div class="fee-summary" id="feeSummary">
+      <div class="fee-summary-row"><span>예상 수업료</span><span id="feeExpected">0불</span></div>
+      <div class="fee-summary-row deduct" id="feeActualRow"><span>확정된 수업료</span><span id="feeActual">0불</span></div>
+    </div>
+  </div>
+
+  <div class="table-footer-row no-print">
+    <button class="btn-secondary" id="pdfBtn">PDF로 저장</button>
+    <button class="btn-ghost" id="editBaseBtn">기본 시간표 편집</button>
+  </div>
+</div>
+
+<div class="modal-overlay no-print" id="baseModalOverlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="week-title" style="font-size:19px;">기본 시간표 편집</span>
+      <button type="button" class="modal-close" id="baseModalCloseBtn">&times;</button>
+    </div>
+    <p class="lead" style="margin:0 0 14px;">여기서 고친 내용은 다음 주로 이동할 때부터 자동 적용됨. 지금 표에는 바로 반영되지 않음.</p>
+    <div class="sheet">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th class="col-name">이름</th>
+              <th class="col-day">요일</th>
+              <th class="col-time">시간</th>
+              <th class="col-place">장소</th>
+              <th class="col-del"></th>
+            </tr>
+          </thead>
+          <tbody id="baseModalTableBody"></tbody>
+        </table>
+      </div>
+      <button class="add-row-btn" id="baseModalAddRowBtn">+ 행 추가</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-primary" id="baseModalSaveBtn">저장</button>
+      <button class="btn-secondary" id="baseModalCancelBtn">취소</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay no-print" id="pdfModalOverlay">
+  <div class="modal-box pdf-modal-box">
+    <div class="modal-header">
+      <span class="week-title" style="font-size:19px;">PDF 미리보기</span>
+      <button type="button" class="modal-close" id="pdfModalCloseBtn">&times;</button>
+    </div>
+    <p class="lead" style="margin:0 0 14px;">아래 미리보기에서 칸 높이와 글자 크기 조절 후 PDF 저장 가능함.</p>
+    <div class="panel row-height-panel" style="margin-bottom:16px;">
+      <p class="panel-title">칸 높이 조절</p>
+      <div class="row-height-control">
+        <input type="range" id="pdfRowHeightSlider" min="10" max="48" step="2" value="20">
+        <span class="row-height-value" id="pdfRowHeightValue">20px</span>
+      </div>
+      <p class="panel-title" style="margin-top:14px;">글자 크기 조절</p>
+      <div class="row-height-control">
+        <input type="range" id="pdfFontSizeSlider" min="12" max="32" step="1" value="18">
+        <span class="row-height-value" id="pdfFontSizeValue">18px</span>
+      </div>
+    </div>
+    <div class="pdf-preview-scroll">
+      <div class="sheet" id="pdfPreviewSheet"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-primary" id="pdfConfirmBtn">PDF 만들기</button>
+      <button class="btn-secondary" id="pdfModalCancelBtn">취소</button>
+    </div>
+  </div>
+</div>
+
+<div class="popover-backdrop no-print" id="popoverBackdrop"></div>
+<div class="picker-popover no-print" id="pickerPopover">
+  <div class="picker-list" id="pickerList"></div>
+  <div class="picker-add" id="pickerAddRow">
+    <input type="text" id="newOptionInput" placeholder="새 항목 입력">
+    <button id="newOptionBtn" type="button">추가</button>
+  </div>
+</div>
+
+<div class="picker-popover date-popover no-print" id="datePopover">
+  <div class="dp-header">
+    <button type="button" class="dp-nav" id="dpPrevBtn">&#8249;</button>
+    <span class="dp-label" id="dpLabel"></span>
+    <button type="button" class="dp-nav" id="dpNextBtn">&#8250;</button>
+  </div>
+  <div class="dp-weekdays">
+    <span class="dp-weekday">일</span><span class="dp-weekday">월</span><span class="dp-weekday">화</span>
+    <span class="dp-weekday">수</span><span class="dp-weekday">목</span><span class="dp-weekday">금</span>
+    <span class="dp-weekday">토</span>
+  </div>
+  <div class="dp-grid" id="dpGrid"></div>
+  <div class="dp-footer">
+    <button type="button" class="btn-ghost" id="dpClearBtn">미납으로 지우기</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const tableBody = document.getElementById('tableBody');
+  const addRowBtn = document.getElementById('addRowBtn');
+  const weekTitle = document.getElementById('weekTitle');
+  const weekRangeEl = document.getElementById('weekRange');
+  const pdfBtn = document.getElementById('pdfBtn');
+  const editBaseBtn = document.getElementById('editBaseBtn');
+  const prevWeekBtn = document.getElementById('prevWeekBtn');
+  const nextWeekBtn = document.getElementById('nextWeekBtn');
+  const sheet = document.getElementById('sheet');
+  const weekPlannerEl = document.getElementById('weekPlanner');
+  const defaultFeeInput = document.getElementById('defaultFeeInput');
+  const pickerPopover = document.getElementById('pickerPopover');
+  const pickerListEl = document.getElementById('pickerList');
+  const pickerAddRow = document.getElementById('pickerAddRow');
+  const popoverBackdrop = document.getElementById('popoverBackdrop');
+  const newOptionInput = document.getElementById('newOptionInput');
+  const newOptionBtn = document.getElementById('newOptionBtn');
+  const datePopover = document.getElementById('datePopover');
+  const dpPrevBtn = document.getElementById('dpPrevBtn');
+  const dpNextBtn = document.getElementById('dpNextBtn');
+  const dpLabel = document.getElementById('dpLabel');
+  const dpGrid = document.getElementById('dpGrid');
+  const dpClearBtn = document.getElementById('dpClearBtn');
+  const baseModalOverlay = document.getElementById('baseModalOverlay');
+  const baseModalCloseBtn = document.getElementById('baseModalCloseBtn');
+  const baseModalCancelBtn = document.getElementById('baseModalCancelBtn');
+  const baseModalSaveBtn = document.getElementById('baseModalSaveBtn');
+  const baseModalAddRowBtn = document.getElementById('baseModalAddRowBtn');
+  const baseModalTableBody = document.getElementById('baseModalTableBody');
+  const syncStatusEl = document.getElementById('syncStatus');
+  const pdfModalOverlay = document.getElementById('pdfModalOverlay');
+  const pdfModalCloseBtn = document.getElementById('pdfModalCloseBtn');
+  const pdfModalCancelBtn = document.getElementById('pdfModalCancelBtn');
+  const pdfConfirmBtn = document.getElementById('pdfConfirmBtn');
+  const pdfRowHeightSlider = document.getElementById('pdfRowHeightSlider');
+  const pdfRowHeightValue = document.getElementById('pdfRowHeightValue');
+  const pdfFontSizeSlider = document.getElementById('pdfFontSizeSlider');
+  const pdfFontSizeValue = document.getElementById('pdfFontSizeValue');
+  const pdfPreviewSheet = document.getElementById('pdfPreviewSheet');
+  const feeExpectedEl = document.getElementById('feeExpected');
+  const feeActualEl = document.getElementById('feeActual');
+  const feeActualRowEl = document.getElementById('feeActualRow');
+
+  const CACHE_KEY = 'soccer_state_cache_v1';
+
+  const DEFAULTS = {
+    name:  ['오스카','엘리엇','임레온','브라이언','도라','엠레','래미','이안','샤르베시','앤쓴'],
+    day:   ['월','화','수','목','금','토','일'],
+    place: ['홈랜드','메도뱅크','에핑','에릭 파크']
+  };
+
+  // 고정 시간표 기본값 — 사진 속 시간표 그대로. 앤쓴은 9월부터 시작이라 아직 제외.
+  const DEFAULT_BASE_SCHEDULE = [
+    ['오스카', '월', '4:00 pm', '홈랜드'],
+    ['엘리엇', '화', '3:30 pm', '메도뱅크'],
+    ['임레온', '수', '3:40 pm', '홈랜드'],
+    ['브라이언', '수', '6:30 am', '에핑'],
+    ['도라', '수', '7:30 am', '에핑'],
+    ['엠레', '목', '6:30 am', '에핑'],
+    ['래미', '토', '7:00 am', '홈랜드'],
+    ['이안', '토', '8:00 am', '홈랜드'],
+    ['샤르베시', '일', '7:00 am', '에릭 파크']
+  ];
+
+  function loadCache(){
+    try{
+      const raw = localStorage.getItem(CACHE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch(e){}
+    return null;
+  }
+  function saveCache(state){
+    try{ localStorage.setItem(CACHE_KEY, JSON.stringify(state)); } catch(e){}
+  }
+
+  const cached = loadCache();
+  let fieldData = cached && cached.locations ? cached.locations : {
+    name: DEFAULTS.name.slice(), day: DEFAULTS.day.slice(),
+    place: DEFAULTS.place.slice()
+  };
+  ['name','day','place'].forEach(function(f){ if(!fieldData[f]) fieldData[f] = []; });
+  // weekEntries is keyed by each week's Monday date ("YYYY-MM-DD") so the
+  // ◀ ▶ arrows can jump straight to any week's saved data (or fall back to
+  // generating it from the base schedule if that week hasn't been visited).
+  let weekEntries = (cached && cached.weekEntries && typeof cached.weekEntries === 'object') ? cached.weekEntries : {};
+  let baseSchedule = (cached && Array.isArray(cached.baseSchedule)) ? cached.baseSchedule : DEFAULT_BASE_SCHEDULE.map(function(r){ return r.slice(); });
+  let defaultFee = cached && cached.defaultFee ? cached.defaultFee : '50';
+  defaultFeeInput.value = defaultFee;
+  defaultFeeInput.addEventListener('change', function(){
+    const val = String(parseInt(defaultFeeInput.value, 10) || 0);
+    defaultFeeInput.value = val;
+    defaultFee = val;
+    pushState();
+  });
+  let localUpdatedAt = cached && cached.updatedAt ? cached.updatedAt : 0;
+
+  function setSyncStatus(text, cls){
+    syncStatusEl.textContent = text;
+    syncStatusEl.className = 'sync-status no-print' + (cls ? ' ' + cls : '');
+  }
+
+  // Firestore does not allow arrays nested inside arrays. Internally each row
+  // is a plain array (name/day/time/place/round/paid/end/fee/attended), and
+  // a week's rows is an array of those rows — an array of arrays — which
+  // Firestore rejects outright. We only need to reshape rows into objects
+  // when talking to Firestore; localStorage and the rest of the app keep
+  // using the simpler array form untouched.
+  function rowToFsObj(r){
+    r = r || [];
+    return { name:r[0]||'', day:r[1]||'', time:r[2]||'', place:r[3]||'', round:r[4]||'1', paid:r[5]||'', end:r[6]||'', fee:r[7]||'', attended: (r[8] !== 'false' && r[8] !== false) };
+  }
+  function rowFromFsObj(r){
+    if (Array.isArray(r)) return r; // already in array form (e.g. old cached shape)
+    r = r || {};
+    return [r.name||'', r.day||'', r.time||'', r.place||'', r.round||'1', r.paid||'', r.end||'', r.fee||'', r.attended === false ? 'false' : 'true'];
+  }
+  function weekEntriesToFirestore(entries){
+    const out = {};
+    Object.keys(entries).forEach(function(key){
+      const e = entries[key] || {};
+      out[key] = { title: e.title || '', rows: (e.rows || []).map(rowToFsObj) };
+    });
+    return out;
+  }
+  function weekEntriesFromFirestore(entries){
+    const out = {};
+    Object.keys(entries || {}).forEach(function(key){
+      const e = entries[key] || {};
+      out[key] = { title: e.title || '', rows: (e.rows || []).map(rowFromFsObj) };
+    });
+    return out;
+  }
+  function baseRowToFsObj(r){
+    r = r || [];
+    return { name:r[0]||'', day:r[1]||'', time:r[2]||'', place:r[3]||'' };
+  }
+  function baseRowFromFsObj(r){
+    if (Array.isArray(r)) return r;
+    r = r || {};
+    return [r.name||'', r.day||'', r.time||'', r.place||''];
+  }
+  function baseScheduleToFirestore(rows){
+    return (rows || []).map(baseRowToFsObj);
+  }
+  function baseScheduleFromFirestore(rows){
+    return (rows || []).map(baseRowFromFsObj);
+  }
+
+  function pushState(){
+    localUpdatedAt = Date.now();
+    const cachePayload = { locations: fieldData, weekEntries: weekEntries, baseSchedule: baseSchedule, defaultFee: defaultFee, updatedAt: localUpdatedAt };
+    saveCache(cachePayload);
+    if (window._fbSave){
+      setSyncStatus('저장 중...', '');
+      const fsPayload = { locations: fieldData, weekEntries: weekEntriesToFirestore(weekEntries), baseSchedule: baseScheduleToFirestore(baseSchedule), defaultFee: defaultFee, updatedAt: localUpdatedAt };
+      Promise.resolve().then(function(){ return window._fbSave(fsPayload); })
+        .then(function(){ setSyncStatus('동기화됨', 'ok'); })
+        .catch(function(err){
+          console.error('sync save failed', err);
+          setSyncStatus('오프라인 (기기에만 저장됨)', 'err');
+        });
+    }
+  }
+
+  window.addEventListener('fb-ready', function(){
+    setSyncStatus('연결 중...', '');
+    window._fbSubscribe(function(remote){
+      if (remote){
+        const remoteUpdatedAt = remote.updatedAt || 0;
+        if (remoteUpdatedAt < localUpdatedAt){
+          // Our cached local save is newer than what's on the server (e.g. the
+          // previous write hadn't finished before a refresh). Don't let the
+          // stale remote copy erase it — push our local copy again instead.
+          pushState();
+          return;
+        }
+        fieldData = remote.locations || fieldData;
+        ['name','day','place'].forEach(function(f){ if(!fieldData[f]) fieldData[f] = []; });
+        weekEntries = weekEntriesFromFirestore(remote.weekEntries || {});
+        if (remote.baseSchedule) baseSchedule = baseScheduleFromFirestore(remote.baseSchedule);
+        if (remote.defaultFee){
+          defaultFee = remote.defaultFee;
+          defaultFeeInput.value = defaultFee;
+        }
+        localUpdatedAt = remoteUpdatedAt;
+        saveCache({ locations: fieldData, weekEntries: weekEntries, baseSchedule: baseSchedule, defaultFee: defaultFee, updatedAt: localUpdatedAt });
+        setSyncStatus('동기화됨', 'ok');
+      } else {
+        pushState();
+      }
+    });
+  });
+  window.addEventListener('fb-error', function(){
+    setSyncStatus('오프라인 (기기에만 저장됨)', 'err');
+  });
+
+  // ---- Auto-fit for the live view: pick the largest font size (and a
+  // matching row padding) that fits the current browser width without any
+  // cell content wrapping to a second line. Re-run whenever the viewport
+  // size changes or the table's row count/content changes meaningfully.
+  let autoFontSize = 18;
+  let autoRowPadding = 14;
+  const AUTOFIT_SIZES = [26, 24, 22, 20, 18, 17, 16, 15, 14, 13, 12, 11];
+
+  function applyLiveSizing(fontPx, padPx){
+    document.documentElement.style.setProperty('--cell-font', fontPx + 'px');
+    document.documentElement.style.setProperty('--cell-py', padPx + 'px');
+  }
+
+  function autoFitTable(){
+    if (!tableBody.children.length){ return; }
+    let chosen = AUTOFIT_SIZES[AUTOFIT_SIZES.length - 1];
+    for (let i = 0; i < AUTOFIT_SIZES.length; i++){
+      const size = AUTOFIT_SIZES[i];
+      const pad = Math.max(8, Math.round(size * 0.55));
+      applyLiveSizing(size, pad);
+      void sheet.offsetHeight;
+      let wrapped = false;
+      const cells = tableBody.querySelectorAll('td');
+      for (let j = 0; j < cells.length; j++){
+        const td = cells[j];
+        const lineHeightPx = size * 1.4;
+        const cs = getComputedStyle(td);
+        const py = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+        if (td.scrollHeight > lineHeightPx + py + 4){ wrapped = true; break; }
+      }
+      if (!wrapped){ chosen = size; break; }
+    }
+    autoFontSize = chosen;
+    autoRowPadding = Math.max(8, Math.round(chosen * 0.55));
+    applyLiveSizing(autoFontSize, autoRowPadding);
+  }
+
+  let autoFitTimer = null;
+  function scheduleAutoFit(){
+    clearTimeout(autoFitTimer);
+    autoFitTimer = setTimeout(autoFitTable, 60);
+  }
+  window.addEventListener('resize', function(){
+    clearTimeout(autoFitTimer);
+    autoFitTimer = setTimeout(autoFitTable, 200);
+  });
+
+  // ---- PDF preview popup ----
+  // The popup gets its own copy of the table (a clone of the live "sheet",
+  // with editing controls like the delete column and "+ 행 추가" stripped
+  // out). The height/font sliders resize only this copy — via CSS
+  // variables scoped to #pdfPreviewSheet — so the background table on the
+  // page underneath is never touched.
+  function applyPdfPreviewSizing(fontPx, padPx){
+    pdfPreviewSheet.style.setProperty('--cell-font', fontPx + 'px');
+    pdfPreviewSheet.style.setProperty('--cell-py', padPx + 'px');
+  }
+  function applyPdfSliderLabel(){
+    pdfRowHeightValue.textContent = pdfRowHeightSlider.value + 'px';
+    pdfFontSizeValue.textContent = pdfFontSizeSlider.value + 'px';
+  }
+  function buildPdfPreview(){
+    pdfPreviewSheet.innerHTML = sheet.innerHTML;
+    pdfPreviewSheet.querySelectorAll('.no-print').forEach(function(el){ el.remove(); });
+    pdfPreviewSheet.querySelectorAll('[id]').forEach(function(el){ el.removeAttribute('id'); });
+    pdfPreviewSheet.querySelectorAll('[contenteditable]').forEach(function(el){ el.removeAttribute('contenteditable'); });
+  }
+  function openPdfModal(){
+    buildPdfPreview();
+    pdfRowHeightSlider.value = autoRowPadding;
+    pdfFontSizeSlider.value = autoFontSize;
+    applyPdfSliderLabel();
+    applyPdfPreviewSizing(parseInt(pdfFontSizeSlider.value, 10), parseInt(pdfRowHeightSlider.value, 10));
+    pdfModalOverlay.classList.add('open');
+  }
+  function closePdfModal(){
+    pdfModalOverlay.classList.remove('open');
+    pdfPreviewSheet.innerHTML = '';
+  }
+  pdfRowHeightSlider.addEventListener('input', function(){
+    applyPdfSliderLabel();
+    applyPdfPreviewSizing(parseInt(pdfFontSizeSlider.value, 10), parseInt(pdfRowHeightSlider.value, 10));
+  });
+  pdfFontSizeSlider.addEventListener('input', function(){
+    applyPdfSliderLabel();
+    applyPdfPreviewSizing(parseInt(pdfFontSizeSlider.value, 10), parseInt(pdfRowHeightSlider.value, 10));
+  });
+  pdfModalCloseBtn.addEventListener('click', closePdfModal);
+  pdfModalCancelBtn.addEventListener('click', closePdfModal);
+
+  // The title/date-range shown are tied to a tracked "week Monday" so the
+  // ◀ ▶ arrows can move it forward/back one week at a time.
+  function mondayOf(d){
+    const day = d.getDay(); // 0=Sun ... 6=Sat
+    const diffToMonday = (day === 0 ? -6 : 1 - day);
+    const monday = new Date(d);
+    monday.setDate(d.getDate() + diffToMonday);
+    monday.setHours(0,0,0,0);
+    return monday;
+  }
+  let currentWeekMonday = mondayOf(new Date());
+
+  function isoDateStr(d){
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  function weekRangeLabelFor(monday){
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    function fmt(dt){ return `${dt.getMonth() + 1}.${dt.getDate()}`; }
+    return `(${fmt(monday)}~${fmt(sunday)})`;
+  }
+
+  function weekTitleFor(monday){
+    const month = monday.getMonth() + 1;
+    const weekOfMonth = Math.ceil(monday.getDate() / 7);
+    return `${month}월 ${weekOfMonth}째주 시간표`;
+  }
+
+  let activePickerCell = null;
+  let activeField = null;
+
+  function makePickerCell(text, colClass, field){
+    const td = document.createElement('td');
+    td.className = colClass;
+    const span = document.createElement('span');
+    span.className = 'picker-text';
+    span.textContent = text || '';
+    td.appendChild(span);
+    td.addEventListener('click', function(){
+      openPickerPopover(td, field);
+    });
+    return td;
+  }
+
+  function makeEditableCell(text, cls, onChange){
+    const td = document.createElement('td');
+    td.className = cls || '';
+    td.contentEditable = 'true';
+    td.textContent = text || '';
+    if (onChange) td.addEventListener('input', onChange);
+    return td;
+  }
+
+  function parseFee(text){
+    const n = parseInt(String(text || '').replace(/[^0-9-]/g, ''), 10);
+    return isNaN(n) ? 0 : n;
+  }
+  function formatWon(n){
+    return n.toLocaleString('ko-KR') + '불';
+  }
+
+  function normalizeAttended(v){
+    return v === 'true' ? 'true' : (v === 'false' ? 'false' : '');
+  }
+
+  function makeFeeCell(fee, attendedState, onChange){
+    const td = document.createElement('td');
+    td.className = 'col-fee';
+    td.setAttribute('data-attended', attendedState || '');
+
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'attend-toggle no-print-inert';
+    toggle.title = '탭: 참석 체크 · 길게 누르면: 불참 표시';
+
+    function renderGlyph(state){
+      if (state === 'true'){
+        toggle.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><polyline points="4 12 9 17 20 6"></polyline></svg>';
+      } else if (state === 'false'){
+        toggle.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg>';
+      } else {
+        toggle.innerHTML = '';
+      }
+    }
+    renderGlyph(attendedState || '');
+
+    function setState(next){
+      td.setAttribute('data-attended', next);
+      renderGlyph(next);
+      if (onChange) onChange();
+    }
+
+    let pressTimer = null;
+    let longPressFired = false;
+    let pointerActive = false;
+
+    function endPress(){
+      pointerActive = false;
+      clearTimeout(pressTimer);
+    }
+
+    toggle.addEventListener('pointerdown', function(e){
+      e.preventDefault();
+      pointerActive = true;
+      longPressFired = false;
+      pressTimer = setTimeout(function(){
+        if (!pointerActive) return;
+        longPressFired = true;
+        const cur = td.getAttribute('data-attended') || '';
+        setState(cur === 'false' ? '' : 'false');
+      }, 500);
+    });
+    toggle.addEventListener('pointerup', function(e){
+      e.preventDefault();
+      const wasLongPress = longPressFired;
+      endPress();
+      if (!wasLongPress){
+        const cur = td.getAttribute('data-attended') || '';
+        setState(cur === 'true' ? '' : 'true');
+      }
+      longPressFired = false;
+    });
+    toggle.addEventListener('pointerleave', endPress);
+    toggle.addEventListener('pointercancel', endPress);
+
+    const amount = document.createElement('span');
+    amount.className = 'fee-amount';
+    amount.contentEditable = 'true';
+    amount.textContent = fee || '';
+    amount.addEventListener('input', function(){ if (onChange) onChange(); });
+
+    const unit = document.createElement('span');
+    unit.className = 'fee-unit';
+    unit.textContent = '불';
+
+    td.appendChild(toggle);
+    td.appendChild(amount);
+    td.appendChild(unit);
+    return td;
+  }
+
+  // ---- Session round (1~5) & fixed-schedule date math ----
+  const DAY_TO_NUM = {'일':0,'월':1,'화':2,'수':3,'목':4,'금':5,'토':6};
+
+  function formatDateDisplay(v, emptyLabel){
+    if (!v) return emptyLabel !== undefined ? emptyLabel : '미납';
+    const d = new Date(v + 'T00:00:00');
+    if (isNaN(d)) return v;
+    const days = ['일','월','화','수','목','금','토'];
+    return `${d.getMonth() + 1}/${d.getDate()}(${days[d.getDay()]})`;
+  }
+
+  // Given the row's fixed weekday and its current round (1~5), figure out
+  // when the 5th session will land, assuming the child attends every week
+  // from now on (the printed schedule is fixed; only occasional absences
+  // shift things, which the parent handles by hand). This only fills in
+  // the 5회 종료일 cell while it's still empty — once a date has been
+  // picked (by this auto-fill or manually), it's left alone so a parent
+  // can freely correct it if a session gets skipped.
+  function calcSessionEndDate(dayKr, round){
+    const dow = DAY_TO_NUM[dayKr];
+    const r = parseInt(round, 10);
+    if (dow === undefined || !r || r < 1 || r > 5) return null;
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const diff = (dow - today.getDay() + 7) % 7; // this week's session (today counts as 0)
+    const thisSession = new Date(today);
+    thisSession.setDate(today.getDate() + diff);
+    const remaining = 5 - r;
+    const endDate = new Date(thisSession);
+    endDate.setDate(thisSession.getDate() + remaining * 7);
+    return endDate;
+  }
+
+  function makeRoundPickerCell(text, colClass){
+    const td = document.createElement('td');
+    td.className = colClass;
+    const span = document.createElement('span');
+    span.className = 'picker-text';
+    span.textContent = text || '1';
+    td.appendChild(span);
+    td.addEventListener('click', function(){
+      openPickerPopover(td, 'round');
+    });
+    return td;
+  }
+
+  function updateEndDateCell(tr){
+    const endTd = tr.querySelector('.col-end');
+    if (!endTd || endTd.dataset.value) return; // already has a date (auto-filled earlier or picked manually) — leave it alone
+    const dayTd = tr.querySelector('.col-day');
+    const roundTd = tr.querySelector('.col-round');
+    const dayText = dayTd ? dayTd.querySelector('.picker-text').textContent.trim() : '';
+    const roundText = roundTd ? roundTd.querySelector('.picker-text').textContent.trim() : '';
+    const d = calcSessionEndDate(dayText, roundText);
+    if (!d) return;
+    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    endTd.dataset.value = iso;
+    endTd.querySelector('.picker-text').textContent = formatDateDisplay(iso, '-');
+  }
+
+  // ---- Custom date picker (used instead of native <input type=date>,
+  // which doesn't reliably open on iPad/iPhone Safari) ----
+  let activeDateCell = null;
+  let dpYear = 0, dpMonth = 0;
+
+  function openDatePopover(td){
+    activeDateCell = td;
+    const existing = td.dataset.value;
+    const base = (existing && /^\d{4}-\d{2}-\d{2}$/.test(existing)) ? new Date(existing + 'T00:00:00') : new Date();
+    dpYear = base.getFullYear();
+    dpMonth = base.getMonth();
+    renderDatePopover();
+    datePopover.classList.add('open');
+    popoverBackdrop.classList.add('open');
+  }
+  function closeDatePopover(){
+    datePopover.classList.remove('open');
+    if (!pickerPopover.classList.contains('open')) popoverBackdrop.classList.remove('open');
+    activeDateCell = null;
+  }
+  function renderDatePopover(){
+    dpLabel.textContent = dpYear + '년 ' + (dpMonth + 1) + '월';
+    dpGrid.innerHTML = '';
+    const selectedIso = activeDateCell ? activeDateCell.dataset.value : '';
+    const firstDow = new Date(dpYear, dpMonth, 1).getDay();
+    const daysInMonth = new Date(dpYear, dpMonth + 1, 0).getDate();
+    for (let i = 0; i < firstDow; i++){
+      const blank = document.createElement('span');
+      blank.className = 'dp-blank';
+      dpGrid.appendChild(blank);
+    }
+    for (let d = 1; d <= daysInMonth; d++){
+      const iso = `${dpYear}-${String(dpMonth + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'dp-day' + (iso === selectedIso ? ' dp-selected' : '');
+      btn.textContent = d;
+      btn.addEventListener('click', function(){
+        if (activeDateCell){
+          activeDateCell.dataset.value = iso;
+          activeDateCell.querySelector('.picker-text').textContent = formatDateDisplay(iso, activeDateCell.dataset.emptyLabel);
+        }
+        closeDatePopover();
+        scheduleAutosave();
+      });
+      dpGrid.appendChild(btn);
+    }
+  }
+  dpPrevBtn.addEventListener('click', function(){
+    dpMonth--; if (dpMonth < 0){ dpMonth = 11; dpYear--; }
+    renderDatePopover();
+  });
+  dpNextBtn.addEventListener('click', function(){
+    dpMonth++; if (dpMonth > 11){ dpMonth = 0; dpYear++; }
+    renderDatePopover();
+  });
+  dpClearBtn.addEventListener('click', function(){
+    if (activeDateCell){
+      activeDateCell.dataset.value = '';
+      activeDateCell.querySelector('.picker-text').textContent = formatDateDisplay('', activeDateCell.dataset.emptyLabel);
+    }
+    closeDatePopover();
+    scheduleAutosave();
+  });
+
+  function makeDatePickerCell(isoValue, cls, emptyLabel){
+    const td = document.createElement('td');
+    td.className = cls || '';
+    td.dataset.value = (isoValue && /^\d{4}-\d{2}-\d{2}$/.test(isoValue)) ? isoValue : '';
+    td.dataset.emptyLabel = emptyLabel !== undefined ? emptyLabel : '미납';
+    const span = document.createElement('span');
+    span.className = 'picker-text';
+    span.textContent = formatDateDisplay(td.dataset.value, td.dataset.emptyLabel);
+    td.appendChild(span);
+    td.addEventListener('click', function(){
+      openDatePopover(td);
+    });
+    return td;
+  }
+
+  function addRowTo(tbodyEl, data, onChange){
+    data = data || ['', '', '', '', '1', '', '', defaultFee, ''];
+    const tr = document.createElement('tr');
+    tr.appendChild(makePickerCell(data[0], 'col-name', 'name'));
+    tr.appendChild(makePickerCell(data[1], 'col-day', 'day'));
+    tr.appendChild(makeEditableCell(data[2], 'col-time', function(){ if (tbodyEl === tableBody){ renderWeekPlanner(); scheduleAutosave(); } }));
+    tr.appendChild(makePickerCell(data[3], 'col-place', 'place'));
+    tr.appendChild(makeRoundPickerCell(data[4], 'col-round'));
+    tr.appendChild(makeDatePickerCell(data[5], 'col-paid', '미납'));
+    tr.appendChild(makeDatePickerCell(data[6], 'col-end', '-'));
+    tr.appendChild(makeFeeCell(data[7], normalizeAttended(data[8]), onChange));
+
+    const delTd = document.createElement('td');
+    delTd.className = 'col-del no-print';
+    const delBtn = document.createElement('button');
+    delBtn.className = 'del-btn';
+    delBtn.type = 'button';
+    delBtn.innerHTML = '&#10005;';
+    delBtn.addEventListener('click', function(){
+      tr.remove();
+      if (onChange) onChange();
+      if (tbodyEl === tableBody){ scheduleAutoFit(); renderWeekPlanner(); }
+    });
+    delTd.appendChild(delBtn);
+    tr.appendChild(delTd);
+
+    tbodyEl.appendChild(tr);
+    updateEndDateCell(tr);
+  }
+
+  function getRowsFrom(tbodyEl){
+    return Array.from(tbodyEl.querySelectorAll('tr')).map(function(tr){
+      const cells = tr.querySelectorAll('td');
+      const feeTd = tr.querySelector('.col-fee');
+      const paidTd = tr.querySelector('.col-paid');
+      const endTd = tr.querySelector('.col-end');
+      const roundTd = tr.querySelector('.col-round');
+      return [
+        cells[0].querySelector('.picker-text').textContent.trim(),
+        cells[1].querySelector('.picker-text').textContent.trim(),
+        cells[2].textContent.trim(),
+        cells[3].querySelector('.picker-text').textContent.trim(),
+        roundTd.querySelector('.picker-text').textContent.trim(),
+        paidTd.dataset.value || '',
+        endTd.dataset.value || '',
+        feeTd.querySelector('.fee-amount').textContent.trim(),
+        feeTd.getAttribute('data-attended') || ''
+      ];
+    });
+  }
+
+  function addRow(data){ addRowTo(tableBody, data, function(){ recalcSummary(); scheduleAutosave(); }); scheduleAutoFit(); renderWeekPlanner(); }
+
+  addRowBtn.addEventListener('click', function(){ addRow(); recalcSummary(); scheduleAutosave(); });
+
+  // ---- Shared picker popover ----
+  function renderPickerList(){
+    pickerListEl.innerHTML = '';
+    const isRound = activeField === 'round';
+    const options = isRound ? ['1','2','3','4','5'] : fieldData[activeField];
+    options.forEach(function(opt){
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'picker-option';
+      btn.textContent = isRound ? (opt + '회차') : opt;
+      if (!isRound){
+        const del = document.createElement('span');
+        del.className = 'del-option';
+        del.innerHTML = '&#10005;';
+        del.addEventListener('click', function(e){
+          e.stopPropagation();
+          fieldData[activeField] = fieldData[activeField].filter(function(o){ return o !== opt; });
+          pushState();
+          renderPickerList();
+        });
+        btn.appendChild(del);
+      }
+      btn.addEventListener('click', function(){
+        const cellTd = activePickerCell;
+        const changedField = activeField;
+        const isMainTable = cellTd && cellTd.closest('tbody') === tableBody;
+        if (cellTd){
+          cellTd.querySelector('.picker-text').textContent = opt;
+        }
+        closePickerPopover();
+        if (isMainTable) renderWeekPlanner();
+        if (cellTd && (changedField === 'day' || changedField === 'round')){
+          const tr = cellTd.closest('tr');
+          if (tr) updateEndDateCell(tr);
+        }
+        if (isMainTable) scheduleAutosave();
+      });
+      pickerListEl.appendChild(btn);
+    });
+  }
+
+  function openPickerPopover(td, field){
+    activePickerCell = td;
+    activeField = field;
+    renderPickerList();
+    newOptionInput.value = '';
+    pickerAddRow.style.display = (field === 'round') ? 'none' : 'flex';
+    pickerPopover.classList.add('open');
+    popoverBackdrop.classList.add('open');
+  }
+
+  function closePickerPopover(){
+    pickerPopover.classList.remove('open');
+    if (!datePopover.classList.contains('open')) popoverBackdrop.classList.remove('open');
+    activePickerCell = null;
+    activeField = null;
+  }
+
+  popoverBackdrop.addEventListener('click', function(){
+    closePickerPopover();
+    closeDatePopover();
+  });
+
+  function addNewOption(){
+    const val = newOptionInput.value.trim();
+    if (!val || !activeField || activeField === 'round') return;
+    if (fieldData[activeField].indexOf(val) === -1){
+      fieldData[activeField].push(val);
+      pushState();
+    }
+    const cellTd = activePickerCell;
+    const changedField = activeField;
+    const isMainTable = cellTd && cellTd.closest('tbody') === tableBody;
+    if (cellTd){
+      cellTd.querySelector('.picker-text').textContent = val;
+    }
+    closePickerPopover();
+    if (isMainTable) renderWeekPlanner();
+    if (cellTd && changedField === 'day'){
+      const tr = cellTd.closest('tr');
+      if (tr) updateEndDateCell(tr);
+    }
+    if (isMainTable) scheduleAutosave();
+  }
+  newOptionBtn.addEventListener('click', addNewOption);
+  newOptionInput.addEventListener('keydown', function(e){
+    if (e.key === 'Enter'){ e.preventDefault(); addNewOption(); }
+  });
+
+  // ---- Fee summary ----
+  function getCurrentRows(){
+    return getRowsFrom(tableBody);
+  }
+
+  const CANONICAL_DAYS = ['월', '화', '수', '목', '금', '토', '일'];
+  const CANONICAL_DAY_OFFSET = {'월':0,'화':1,'수':2,'목':3,'금':4,'토':5,'일':6};
+
+  function monthDayLabel(offsetDays){
+    const d = new Date(currentWeekMonday);
+    d.setDate(currentWeekMonday.getDate() + offsetDays);
+    return `${d.getMonth() + 1}/${d.getDate()}`;
+  }
+
+  function renderWeekPlanner(){
+    const rows = getCurrentRows();
+    const groups = {};
+    const order = [];
+    CANONICAL_DAYS.forEach(function(d){ groups[d] = []; order.push(d); });
+    rows.forEach(function(r){
+      const day = r[1] || '기타';
+      if (!groups[day]){ groups[day] = []; order.push(day); }
+      groups[day].push({ time: r[2] || '', name: r[0] || '(이름 없음)' });
+    });
+
+    weekPlannerEl.innerHTML = '';
+    order.forEach(function(day){
+      const entries = groups[day];
+      const col = document.createElement('div');
+      col.className = 'planner-day';
+
+      const head = document.createElement('div');
+      head.className = 'planner-day-head';
+      const offset = CANONICAL_DAY_OFFSET[day];
+      head.textContent = offset !== undefined ? (day + ' ' + monthDayLabel(offset)) : day;
+      col.appendChild(head);
+
+      if (entries.length === 0){
+        const empty = document.createElement('div');
+        empty.className = 'planner-empty';
+        empty.textContent = '-';
+        col.appendChild(empty);
+      } else {
+        entries.forEach(function(e){
+          const item = document.createElement('div');
+          item.className = 'planner-entry';
+          const timeSpan = document.createElement('span');
+          timeSpan.className = 'planner-time';
+          timeSpan.textContent = e.time;
+          const nameSpan = document.createElement('span');
+          nameSpan.className = 'planner-name';
+          nameSpan.textContent = e.name;
+          item.appendChild(timeSpan);
+          item.appendChild(nameSpan);
+          col.appendChild(item);
+        });
+      }
+      weekPlannerEl.appendChild(col);
+    });
+  }
+
+  function computeTotals(rows){
+    let expected = 0, actual = 0;
+    rows.forEach(function(r){
+      const fee = parseFee(r[7]);
+      const state = r[8] || '';
+      if (state !== 'false') expected += fee;
+      if (state === 'true') actual += fee;
+    });
+    return { expected: expected, actual: actual };
+  }
+
+  function buildRecalc(getRowsFn, expectedEl, actualEl, actualRowEl){
+    return function(){
+      const totals = computeTotals(getRowsFn());
+      expectedEl.textContent = formatWon(totals.expected);
+      actualEl.textContent = formatWon(totals.actual);
+      actualRowEl.style.display = 'flex';
+    };
+  }
+
+  const recalcSummary = buildRecalc(getCurrentRows, feeExpectedEl, feeActualEl, feeActualRowEl);
+  recalcSummary();
+
+  // ---- Autosave: every edit to the current week's table is persisted
+  // (debounced) under this week's Monday date, so there's no separate
+  // "저장" button to remember to click.
+  let autosaveTimer = null;
+  function saveCurrentWeekNow(){
+    const key = isoDateStr(currentWeekMonday);
+    weekEntries[key] = { title: weekTitle.value || '', rows: getCurrentRows() };
+    pushState();
+  }
+  function scheduleAutosave(){
+    clearTimeout(autosaveTimer);
+    autosaveTimer = setTimeout(saveCurrentWeekNow, 500);
+  }
+  weekTitle.addEventListener('input', scheduleAutosave);
+
+  // Look up a student's most recent known round/paid/end-date by walking
+  // backward week by week from `beforeMonday`, so the round can keep
+  // auto-advancing even if some weeks in between were never visited.
+  function findPriorRowForStudent(name, beforeMonday, maxWeeksBack){
+    let m = new Date(beforeMonday);
+    for (let i = 0; i < maxWeeksBack; i++){
+      m = new Date(m);
+      m.setDate(m.getDate() - 7);
+      const entry = weekEntries[isoDateStr(m)];
+      if (entry){
+        const row = (entry.rows || []).find(function(r){ return r[0] === name; });
+        if (row) return row;
+      }
+    }
+    return null;
+  }
+
+  // Populate the table for a given week: use its saved data if we have it,
+  // otherwise generate it fresh from the base schedule (advancing each
+  // student's round from their last known week).
+  function populateWeekTable(monday){
+    tableBody.innerHTML = '';
+    const key = isoDateStr(monday);
+    const entry = weekEntries[key];
+    if (entry && entry.rows && entry.rows.length){
+      entry.rows.forEach(function(row){ addRow(row.slice()); });
+    } else if (baseSchedule.length === 0){
+      addRow();
+    } else {
+      baseSchedule.forEach(function(base){
+        const name = base[0] || '';
+        const prev = findPriorRowForStudent(name, monday, 26);
+        let round = 1, paid = '', end = '';
+        if (prev){
+          let prevRound = parseInt(prev[4], 10);
+          if (!prevRound || prevRound < 1 || prevRound > 5) prevRound = 1;
+          round = prevRound >= 5 ? 1 : prevRound + 1;
+          if (round !== 1){
+            paid = prev[5] || '';
+            end = prev[6] || '';
+          }
+        }
+        addRow([name, base[1] || '', base[2] || '', base[3] || '', String(round), paid, end, defaultFee, '']);
+      });
+    }
+    weekTitle.value = (entry && entry.title) ? entry.title : weekTitleFor(monday);
+    weekRangeEl.textContent = weekRangeLabelFor(monday);
+    recalcSummary();
+    autoFitTable();
+    renderWeekPlanner();
+    scheduleAutosave();
+  }
+
+  populateWeekTable(currentWeekMonday);
+
+  function goToWeek(deltaWeeks){
+    saveCurrentWeekNow(); // flush the week we're leaving before moving
+    currentWeekMonday.setDate(currentWeekMonday.getDate() + deltaWeeks * 7);
+    populateWeekTable(currentWeekMonday);
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+  prevWeekBtn.addEventListener('click', function(){ goToWeek(-1); });
+  nextWeekBtn.addEventListener('click', function(){ goToWeek(1); });
+
+  // ---- Base (fixed) schedule editor ----
+  function addBaseRowTo(tbodyEl, data){
+    data = data || ['', '', '', ''];
+    const tr = document.createElement('tr');
+    tr.appendChild(makePickerCell(data[0], 'col-name', 'name'));
+    tr.appendChild(makePickerCell(data[1], 'col-day', 'day'));
+    tr.appendChild(makeEditableCell(data[2], 'col-time'));
+    tr.appendChild(makePickerCell(data[3], 'col-place', 'place'));
+
+    const delTd = document.createElement('td');
+    delTd.className = 'col-del';
+    const delBtn = document.createElement('button');
+    delBtn.className = 'del-btn';
+    delBtn.type = 'button';
+    delBtn.innerHTML = '&#10005;';
+    delBtn.addEventListener('click', function(){ tr.remove(); });
+    delTd.appendChild(delBtn);
+    tr.appendChild(delTd);
+
+    tbodyEl.appendChild(tr);
+  }
+  function getBaseRowsFrom(tbodyEl){
+    return Array.from(tbodyEl.querySelectorAll('tr')).map(function(tr){
+      const cells = tr.querySelectorAll('td');
+      return [
+        cells[0].querySelector('.picker-text').textContent.trim(),
+        cells[1].querySelector('.picker-text').textContent.trim(),
+        cells[2].textContent.trim(),
+        cells[3].querySelector('.picker-text').textContent.trim()
+      ];
+    });
+  }
+  function openBaseModal(){
+    baseModalTableBody.innerHTML = '';
+    baseSchedule.forEach(function(row){ addBaseRowTo(baseModalTableBody, row); });
+    baseModalOverlay.classList.add('open');
+  }
+  function closeBaseModal(){
+    baseModalOverlay.classList.remove('open');
+    baseModalTableBody.innerHTML = '';
+  }
+  editBaseBtn.addEventListener('click', openBaseModal);
+  baseModalCloseBtn.addEventListener('click', closeBaseModal);
+  baseModalCancelBtn.addEventListener('click', closeBaseModal);
+  baseModalAddRowBtn.addEventListener('click', function(){
+    addBaseRowTo(baseModalTableBody, null);
+  });
+  baseModalSaveBtn.addEventListener('click', function(){
+    baseSchedule = getBaseRowsFrom(baseModalTableBody).filter(function(r){ return r[0] || r[1] || r[2] || r[3]; });
+    pushState();
+    closeBaseModal();
+  });
+
+  // ---- PDF export ----
+  pdfBtn.addEventListener('click', function(){
+    openPdfModal();
+  });
+
+  pdfConfirmBtn.addEventListener('click', async function(){
+    pdfConfirmBtn.disabled = true;
+    const originalText = pdfConfirmBtn.textContent;
+    pdfConfirmBtn.textContent = '만드는 중...';
+    try{
+      const canvas = await html2canvas(pdfPreviewSheet, { scale: 2, backgroundColor: '#ffffff' });
+
+      const imgData = canvas.toDataURL('image/png');
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = 210, pageHeight = 297, margin = 12;
+      const imgWidth = pageWidth - margin * 2;
+      const imgHeight = canvas.height * imgWidth / canvas.width;
+
+      let heightLeft = imgHeight;
+      let position = margin;
+
+      pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
+      heightLeft -= (pageHeight - margin * 2);
+
+      while (heightLeft > 0){
+        position = heightLeft - imgHeight + margin;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
+        heightLeft -= (pageHeight - margin * 2);
+      }
+
+      const safeTitle = (weekTitle.value || '축구교실_시간표').replace(/[\\/:*?"<>|]/g, '');
+      pdf.save(safeTitle + '.pdf');
+      closePdfModal();
+    } catch(err){
+      alert('PDF 생성 중 문제가 발생했어요. 다시 시도해 주세요.');
+      console.error(err);
+    } finally {
+      pdfConfirmBtn.disabled = false;
+      pdfConfirmBtn.textContent = originalText;
+    }
+  });
+})();
+</script>
+</body>
+</html>
