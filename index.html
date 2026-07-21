@@ -270,6 +270,13 @@
   .picker-text.paid-unpaid{color:var(--danger);}
   .col-del{width:44px;text-align:center;}
 
+  .fee-cell-inner{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:3px;
+  }
   .attend-toggle{
     display:inline-flex;
     align-items:center;
@@ -278,7 +285,7 @@
     height:28px;
     min-height:0;
     padding:0;
-    margin-right:6px;
+    margin:0;
     font-size:15px;
     font-weight:700;
     background:#fff;
@@ -296,8 +303,10 @@
   .col-fee[data-attended="true"] .attend-toggle{background:var(--accent);color:#fff;border-color:var(--accent);}
   .col-fee[data-attended="false"] .attend-toggle{background:#fff;color:var(--danger);border-color:var(--danger);}
   .col-fee[data-attended="false"] .fee-amount{color:var(--danger);text-decoration:line-through;}
+  .fee-amount-line{display:inline-flex;align-items:baseline;white-space:nowrap;}
   .fee-amount{display:inline-block;min-width:16px;outline:none;}
-  .fee-unit{font-size:14px;color:var(--sub);margin-left:3px;}
+  .fee-unit{font-size:14px;color:var(--sub);margin-left:2px;}
+
 
   .del-btn{
     background:transparent;
@@ -326,25 +335,37 @@
 
   .fee-summary{
     border-top:2px solid var(--accent);
-    padding:12px 16px;
+    padding:16px;
     background:#fafbfd;
-  }
-  .fee-summary-row{
     display:flex;
-    justify-content:space-between;
-    gap:10px;
-    font-size:16px;
-    font-weight:600;
-    padding:4px 0;
+    flex-direction:column;
+    gap:12px;
   }
-  .fee-summary-row.deduct{color:var(--accent);}
+  .fee-summary-card{
+    background:#fff;
+    border:1px solid var(--line);
+  }
   .fee-summary-label{
     font-size:13px;
     font-weight:700;
     color:var(--sub);
-    margin:0 0 2px;
-    text-transform:none;
+    margin:0;
+    padding:9px 14px;
+    border-bottom:1px solid var(--line);
+    background:#f6f8fc;
   }
+  .fee-summary-label .fee-summary-sub{font-weight:500;color:var(--sub);}
+  .fee-summary-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    gap:10px;
+    padding:8px 14px;
+  }
+  .fee-summary-row + .fee-summary-row{border-top:1px dashed var(--line);}
+  .fee-summary-row span:first-child{font-size:13px;font-weight:500;color:var(--sub);}
+  .fee-summary-row span:last-child{font-size:17px;font-weight:700;color:var(--ink);}
+  .fee-summary-row.deduct span:last-child{color:var(--accent);}
 
   .table-footer-row{
     display:flex;
@@ -508,6 +529,7 @@
     h1{font-size:19px;}
     .sync-status{font-size:11px;padding:3px 7px;top:2px;}
     .title-row{align-items:center;}
+    .default-fee-row{margin-top:22px;}
     .week-title{font-size:18px;min-width:100%;order:1;}
     .week-range-inline{font-size:12.5px;order:2;}
     .week-nav{order:3;margin-left:auto;}
@@ -517,7 +539,7 @@
     .planner-entry{font-size:11px;}
     thead th{padding:6px 3px;}
     tbody td{padding-left:3px;padding-right:3px;}
-    .attend-toggle{width:22px;height:22px;margin-right:3px;}
+    .attend-toggle{width:22px;height:22px;}
     .fee-unit{font-size:11px;margin-left:1px;}
     .col-del{width:26px;}
     .del-btn{padding:2px;font-size:15px;min-height:0;}
@@ -582,12 +604,16 @@
     </div>
     <button class="add-row-btn no-print" id="addRowBtn">+ 행 추가</button>
     <div class="fee-summary" id="feeSummary">
-      <p class="fee-summary-label">이번 주 수업료 수입 (수업 횟수 기준)</p>
-      <div class="fee-summary-row"><span>예상</span><span id="feeExpected">0불</span></div>
-      <div class="fee-summary-row deduct" id="feeActualRow"><span>확정</span><span id="feeActual">0불</span></div>
-      <p class="fee-summary-label" style="margin-top:14px;">이번 주 수령액 (5회차 결제 기준)</p>
-      <div class="fee-summary-row"><span>예상</span><span id="cashExpected">0불</span></div>
-      <div class="fee-summary-row deduct" id="cashActualRow"><span>확정</span><span id="cashActual">0불</span></div>
+      <div class="fee-summary-card">
+        <p class="fee-summary-label">이번 주 수업료 수입 <span class="fee-summary-sub">(수업 횟수 기준)</span></p>
+        <div class="fee-summary-row"><span>예상</span><span id="feeExpected">0불</span></div>
+        <div class="fee-summary-row deduct" id="feeActualRow"><span>확정</span><span id="feeActual">0불</span></div>
+      </div>
+      <div class="fee-summary-card">
+        <p class="fee-summary-label">이번 주 수령액 <span class="fee-summary-sub">(5회차 결제 기준)</span></p>
+        <div class="fee-summary-row"><span>예상</span><span id="cashExpected">0불</span></div>
+        <div class="fee-summary-row deduct" id="cashActualRow"><span>확정</span><span id="cashActual">0불</span></div>
+      </div>
     </div>
   </div>
 
@@ -1118,9 +1144,16 @@
     unit.className = 'fee-unit';
     unit.textContent = '불';
 
-    td.appendChild(toggle);
-    td.appendChild(amount);
-    td.appendChild(unit);
+    const amountLine = document.createElement('span');
+    amountLine.className = 'fee-amount-line';
+    amountLine.appendChild(amount);
+    amountLine.appendChild(unit);
+
+    const inner = document.createElement('div');
+    inner.className = 'fee-cell-inner';
+    inner.appendChild(toggle);
+    inner.appendChild(amountLine);
+    td.appendChild(inner);
     return td;
   }
 
@@ -1132,20 +1165,18 @@
     const feeTd = tr.querySelector('.col-fee');
     if (!feeTd) return;
     const amount = feeTd.querySelector('.fee-amount');
-    const unit = feeTd.querySelector('.fee-unit');
+    const amountLine = feeTd.querySelector('.fee-amount-line');
     const roundTd = tr.querySelector('.col-round');
     const round = roundTd ? roundTd.querySelector('.picker-text').textContent.trim() : '1';
     const perSession = parseFee(feeTd.dataset.fee);
     if (round === '1'){
       amount.contentEditable = 'true';
       amount.textContent = String(perSession * 5);
-      amount.style.display = '';
-      unit.style.display = '';
+      amountLine.style.display = '';
     } else {
       amount.contentEditable = 'false';
       amount.textContent = '';
-      amount.style.display = 'none';
-      unit.style.display = 'none';
+      amountLine.style.display = 'none';
     }
   }
 
