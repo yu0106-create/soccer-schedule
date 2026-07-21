@@ -1508,6 +1508,19 @@
     return `${d.getMonth() + 1}/${d.getDate()}`;
   }
 
+  // Parses times like "4:00 pm", "6:30am", "7 pm" into minutes-since-midnight
+  // for sorting; unparseable text sorts to the end so it doesn't crash the order.
+  function parseTimeToMinutes(text){
+    const m = String(text || '').trim().toLowerCase().match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/);
+    if (!m) return Infinity;
+    let hour = parseInt(m[1], 10);
+    const minute = m[2] ? parseInt(m[2], 10) : 0;
+    const meridiem = m[3];
+    if (meridiem === 'pm' && hour !== 12) hour += 12;
+    if (meridiem === 'am' && hour === 12) hour = 0;
+    return hour * 60 + minute;
+  }
+
   function renderWeekPlanner(){
     const rows = getCurrentRows();
     const groups = {};
@@ -1517,6 +1530,9 @@
       const day = r[1] || '기타';
       if (!groups[day]){ groups[day] = []; order.push(day); }
       groups[day].push({ time: r[2] || '', name: r[0] || '(이름 없음)' });
+    });
+    order.forEach(function(day){
+      groups[day].sort(function(a, b){ return parseTimeToMinutes(a.time) - parseTimeToMinutes(b.time); });
     });
 
     weekPlannerEl.innerHTML = '';
@@ -1635,16 +1651,29 @@
   // Populate the table for a given week: use its saved data if we have it,
   // otherwise generate it fresh from the base schedule (advancing each
   // student's round from their last known week).
+  // Primary sort: day of week (월→일). Secondary sort: time of day.
+  // Unrecognized day text sorts to the end rather than erroring out.
+  function compareByDayTime(aDay, aTime, bDay, bTime){
+    const aIdx = CANONICAL_DAY_OFFSET[aDay];
+    const bIdx = CANONICAL_DAY_OFFSET[bDay];
+    const aDayIdx = aIdx === undefined ? 99 : aIdx;
+    const bDayIdx = bIdx === undefined ? 99 : bIdx;
+    if (aDayIdx !== bDayIdx) return aDayIdx - bDayIdx;
+    return parseTimeToMinutes(aTime) - parseTimeToMinutes(bTime);
+  }
+
   function populateWeekTable(monday){
     tableBody.innerHTML = '';
     const key = isoDateStr(monday);
     const entry = weekEntries[key];
     if (entry && entry.rows && entry.rows.length){
-      entry.rows.forEach(function(row){ addRow(row.slice()); });
+      const sorted = entry.rows.slice().sort(function(a, b){ return compareByDayTime(a[1], a[2], b[1], b[2]); });
+      sorted.forEach(function(row){ addRow(row.slice()); });
     } else if (baseSchedule.length === 0){
       addRow();
     } else {
-      baseSchedule.forEach(function(base){
+      const sortedBase = baseSchedule.slice().sort(function(a, b){ return compareByDayTime(a[1], a[2], b[1], b[2]); });
+      sortedBase.forEach(function(base){
         const name = base[0] || '';
         const prev = findPriorRowForStudent(name, monday, 26);
         let round = 1, paid = '', end = '';
@@ -1728,7 +1757,9 @@
     addBaseRowTo(baseModalTableBody, null);
   });
   baseModalSaveBtn.addEventListener('click', function(){
-    baseSchedule = getBaseRowsFrom(baseModalTableBody).filter(function(r){ return r[0] || r[1] || r[2] || r[3]; });
+    baseSchedule = getBaseRowsFrom(baseModalTableBody)
+      .filter(function(r){ return r[0] || r[1] || r[2] || r[3]; })
+      .sort(function(a, b){ return compareByDayTime(a[1], a[2], b[1], b[2]); });
     pushState();
     closeBaseModal();
   });
