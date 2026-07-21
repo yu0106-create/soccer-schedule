@@ -95,6 +95,7 @@
     grid-template-columns:repeat(auto-fit, minmax(84px, 1fr));
     gap:8px;
     margin:14px 0 22px;
+    align-items:start;
   }
   .planner-day{
     border:1px solid var(--line);
@@ -233,7 +234,7 @@
 
   .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
 
-  table{width:100%;min-width:720px;table-layout:fixed;border-collapse:collapse;}
+  table{width:100%;table-layout:fixed;border-collapse:collapse;}
   thead th{
     background:var(--accent);
     color:#fff;
@@ -507,9 +508,10 @@
     .planner-entry{font-size:11px;}
     thead th{padding:6px 3px;}
     tbody td{padding-left:3px;padding-right:3px;}
-    table{min-width:0;}
     .attend-toggle{width:22px;height:22px;margin-right:3px;}
     .fee-unit{font-size:11px;margin-left:1px;}
+    .col-del{width:26px;}
+    .del-btn{padding:2px;font-size:15px;min-height:0;}
     .table-footer-row{flex-direction:column;}
     .table-footer-row button{width:100%;}
     .modal-box{padding:12px;margin-top:8px;}
