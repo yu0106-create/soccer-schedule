@@ -8,7 +8,7 @@
 <body>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
-  import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+  import { getFirestore, doc, setDoc, onSnapshot, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDhixzMFjuydP-EQbqQsdkM3OWA0e504AM",
@@ -22,16 +22,33 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
   const stateRef = doc(db, "soccer", "state");
+  const weeksCol = collection(db, "soccer", "state", "weeks");
 
-  window._fbSave = function(state){
+  // Small, rarely-changing document: fieldData/baseSchedule/defaultFee only.
+  // Saving this is cheap no matter how many weeks exist.
+  window._fbSaveGlobal = function(state){
     return setDoc(stateRef, state);
   };
-  window._fbSubscribe = function(callback){
+  window._fbSubscribeGlobal = function(callback){
     return onSnapshot(stateRef, function(snap){
       callback(snap.exists() ? snap.data() : null);
     }, function(err){
       console.error('firestore sync error', err);
       window.dispatchEvent(new CustomEvent('fb-error'));
+    });
+  };
+
+  // Each week gets its own small document, so saving "this week" only ever
+  // uploads this week — not the entire history of every week ever visited.
+  window._fbSaveWeek = function(isoDate, weekData){
+    return setDoc(doc(weeksCol, isoDate), weekData);
+  };
+  // Fetched once at startup to hydrate the local weekEntries cache.
+  window._fbLoadAllWeeks = function(){
+    return getDocs(weeksCol).then(function(snap){
+      const out = {};
+      snap.forEach(function(d){ out[d.id] = d.data(); });
+      return out;
     });
   };
 
@@ -810,7 +827,7 @@
     const val = String(parseInt(defaultFeeInput.value, 10) || 0);
     defaultFeeInput.value = val;
     defaultFee = val;
-    pushState();
+    pushGlobalState();
   });
   let localUpdatedAt = cached && cached.updatedAt ? cached.updatedAt : 0;
 
@@ -829,22 +846,6 @@
     r = r || {};
     return [r.name||'', r.day||'', r.time||'', r.place||'', r.round||'1', r.paid||'', r.end||'', r.fee||'', r.attended === false ? 'false' : 'true'];
   }
-  function weekEntriesToFirestore(entries){
-    const out = {};
-    Object.keys(entries).forEach(function(key){
-      const e = entries[key] || {};
-      out[key] = { title: e.title || '', rows: (e.rows || []).map(rowToFsObj) };
-    });
-    return out;
-  }
-  function weekEntriesFromFirestore(entries){
-    const out = {};
-    Object.keys(entries || {}).forEach(function(key){
-      const e = entries[key] || {};
-      out[key] = { title: e.title || '', rows: (e.rows || []).map(rowFromFsObj) };
-    });
-    return out;
-  }
   function baseRowToFsObj(r){
     r = r || [];
     return { name:r[0]||'', day:r[1]||'', time:r[2]||'', place:r[3]||'' };
@@ -861,46 +862,83 @@
     return (rows || []).map(baseRowFromFsObj);
   }
 
-  function pushState(){
+  function saveLocalCache(){
+    saveCache({ locations: fieldData, weekEntries: weekEntries, baseSchedule: baseSchedule, defaultFee: defaultFee, updatedAt: localUpdatedAt });
+  }
+
+  // Small, rarely-changing state (fieldData/baseSchedule/defaultFee). Cheap
+  // to save regardless of how many weeks have been visited.
+  function pushGlobalState(){
     localUpdatedAt = Date.now();
-    const cachePayload = { locations: fieldData, weekEntries: weekEntries, baseSchedule: baseSchedule, defaultFee: defaultFee, updatedAt: localUpdatedAt };
-    saveCache(cachePayload);
-    if (window._fbSave){
-      const fsPayload = { locations: fieldData, weekEntries: weekEntriesToFirestore(weekEntries), baseSchedule: baseScheduleToFirestore(baseSchedule), defaultFee: defaultFee, updatedAt: localUpdatedAt };
-      return Promise.resolve().then(function(){ return window._fbSave(fsPayload); })
-        .catch(function(err){
-          console.error('sync save failed', err);
-          throw err;
-        });
+    saveLocalCache();
+    if (window._fbSaveGlobal){
+      const payload = { locations: fieldData, baseSchedule: baseScheduleToFirestore(baseSchedule), defaultFee: defaultFee, updatedAt: localUpdatedAt };
+      return Promise.resolve().then(function(){ return window._fbSaveGlobal(payload); })
+        .catch(function(err){ console.error('global sync save failed', err); throw err; });
+    }
+    return Promise.resolve();
+  }
+
+  // A single week's data, saved to its own small Firestore document — this
+  // is what actually happens when the person edits a week and hits 저장,
+  // so it stays fast no matter how many past weeks have piled up.
+  function pushWeekState(isoDate){
+    saveLocalCache();
+    if (window._fbSaveWeek){
+      const entry = weekEntries[isoDate] || { title: '', rows: [], updatedAt: Date.now() };
+      const payload = { title: entry.title || '', rows: (entry.rows || []).map(rowToFsObj), updatedAt: entry.updatedAt || Date.now() };
+      return Promise.resolve().then(function(){ return window._fbSaveWeek(isoDate, payload); })
+        .catch(function(err){ console.error('week sync save failed', err); throw err; });
     }
     return Promise.resolve();
   }
 
   window.addEventListener('fb-ready', function(){
-    window._fbSubscribe(function(remote){
-      if (remote){
-        const remoteUpdatedAt = remote.updatedAt || 0;
-        if (remoteUpdatedAt < localUpdatedAt){
-          // Our cached local save is newer than what's on the server (e.g. the
-          // previous write hadn't finished before a refresh). Don't let the
-          // stale remote copy erase it — push our local copy again instead.
-          pushState();
-          return;
+    if (window._fbSubscribeGlobal){
+      window._fbSubscribeGlobal(function(remote){
+        if (remote){
+          const remoteUpdatedAt = remote.updatedAt || 0;
+          if (remoteUpdatedAt < localUpdatedAt){
+            // Our cached local save is newer than what's on the server (e.g. the
+            // previous write hadn't finished before a refresh). Don't let the
+            // stale remote copy erase it — push our local copy again instead.
+            pushGlobalState();
+            return;
+          }
+          fieldData = remote.locations || fieldData;
+          ['name','day','place'].forEach(function(f){ if(!fieldData[f]) fieldData[f] = []; });
+          if (remote.baseSchedule) baseSchedule = baseScheduleFromFirestore(remote.baseSchedule);
+          if (remote.defaultFee){
+            defaultFee = remote.defaultFee;
+            defaultFeeInput.value = defaultFee;
+          }
+          localUpdatedAt = remoteUpdatedAt;
+          saveLocalCache();
+        } else {
+          pushGlobalState();
         }
-        fieldData = remote.locations || fieldData;
-        ['name','day','place'].forEach(function(f){ if(!fieldData[f]) fieldData[f] = []; });
-        weekEntries = weekEntriesFromFirestore(remote.weekEntries || {});
-        if (remote.baseSchedule) baseSchedule = baseScheduleFromFirestore(remote.baseSchedule);
-        if (remote.defaultFee){
-          defaultFee = remote.defaultFee;
-          defaultFeeInput.value = defaultFee;
-        }
-        localUpdatedAt = remoteUpdatedAt;
-        saveCache({ locations: fieldData, weekEntries: weekEntries, baseSchedule: baseSchedule, defaultFee: defaultFee, updatedAt: localUpdatedAt });
-      } else {
-        pushState();
-      }
-    });
+      });
+    }
+    if (window._fbLoadAllWeeks){
+      window._fbLoadAllWeeks().then(function(remoteWeeks){
+        const currentKey = isoDateStr(currentWeekMonday);
+        let changed = false;
+        Object.keys(remoteWeeks).forEach(function(key){
+          if (key === currentKey) return; // never clobber what's on screen right now
+          const r = remoteWeeks[key] || {};
+          const remoteUpdatedAt = r.updatedAt || 0;
+          const localEntry = weekEntries[key];
+          const localWeekUpdatedAt = (localEntry && localEntry.updatedAt) ? localEntry.updatedAt : 0;
+          if (!localEntry || remoteUpdatedAt > localWeekUpdatedAt){
+            weekEntries[key] = { title: r.title || '', rows: (r.rows || []).map(rowFromFsObj), updatedAt: remoteUpdatedAt };
+            changed = true;
+          }
+        });
+        if (changed) saveLocalCache();
+      }).catch(function(err){
+        console.error('failed to load weeks from Firestore', err);
+      });
+    }
   });
 
   // ---- Auto-fit for the live view: pick the largest font size (and a
@@ -1409,7 +1447,7 @@
         del.addEventListener('click', function(e){
           e.stopPropagation();
           fieldData[activeField] = fieldData[activeField].filter(function(o){ return o !== opt; });
-          pushState();
+          pushGlobalState();
           renderPickerList();
         });
         btn.appendChild(del);
@@ -1463,7 +1501,7 @@
     if (!val || !activeField || activeField === 'round') return;
     if (fieldData[activeField].indexOf(val) === -1){
       fieldData[activeField].push(val);
-      pushState();
+      pushGlobalState();
     }
     const cellTd = activePickerCell;
     const changedField = activeField;
@@ -1610,8 +1648,8 @@
   // silently lost when moving away) — not on every keystroke.
   function saveCurrentWeekNow(){
     const key = isoDateStr(currentWeekMonday);
-    weekEntries[key] = { title: weekTitle.value || '', rows: getCurrentRows() };
-    return pushState();
+    weekEntries[key] = { title: weekTitle.value || '', rows: getCurrentRows(), updatedAt: Date.now() };
+    return pushWeekState(key);
   }
 
   // Look up a student's most recent known round/paid/end-date by walking
@@ -1765,7 +1803,7 @@
     baseSchedule = getBaseRowsFrom(baseModalTableBody)
       .filter(function(r){ return r[0] || r[1] || r[2] || r[3]; })
       .sort(function(a, b){ return compareByDayTime(a[1], a[2], b[1], b[2]); });
-    pushState();
+    pushGlobalState();
     closeBaseModal();
   });
 
