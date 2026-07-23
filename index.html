@@ -83,6 +83,16 @@
   .sync-status.ok{color:var(--accent);border-color:var(--accent-soft);background:var(--accent-soft);}
   .sync-status.err{color:var(--danger);}
 
+  .top-save-row{
+    display:flex;
+    justify-content:center;
+    margin:6px 0 16px;
+  }
+  .top-save-row button{
+    width:100%;
+    max-width:320px;
+  }
+
   .lead{
     font-size:14px;
     color:var(--sub);
@@ -95,7 +105,6 @@
     grid-template-columns:repeat(auto-fit, minmax(84px, 1fr));
     gap:8px;
     margin:14px 0 22px;
-    align-items:start;
   }
   .planner-day{
     border:1px solid var(--line);
@@ -184,12 +193,6 @@
   .sheet-head{
     margin:28px 0 4px;
   }
-  .week-title-row{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    flex-wrap:wrap;
-  }
   .week-title{
     font-size:22px;
     font-weight:700;
@@ -197,33 +200,22 @@
     border-bottom:2px solid var(--accent);
     padding:4px 2px 6px;
     background:transparent;
-    flex:1;
-    min-width:140px;
   }
   .week-title:focus{outline:none;}
-  .week-range-inline{
-    font-size:14px;
-    font-weight:600;
-    color:var(--accent);
-    white-space:nowrap;
-    flex-shrink:0;
-  }
-  .week-nav{
+  .sheet-head .week-title{display:block;width:100%;}
+  .week-sub-line{
     display:flex;
-    gap:6px;
-    flex-shrink:0;
+    align-items:center;
+    gap:10px;
+    white-space:nowrap;
+    overflow:hidden;
+    margin:6px 0 10px;
   }
-  .week-nav-btn{
-    background:#fff;
-    border:1px solid var(--line);
-    color:var(--accent);
-    font-size:20px;
-    font-weight:700;
-    padding:4px 14px;
-    min-height:40px;
-    line-height:1;
-  }
-  .week-nav-btn:active{background:var(--accent-soft);}
+  .week-range{font-size:14px;font-weight:600;color:var(--accent);}
+  .week-meta{font-size:13px;color:var(--sub);}
+
+  .editing-badge{font-size:14px;color:var(--accent);margin:0 0 12px;}
+  .editing-badge:empty{display:none;margin:0;}
 
   .sheet{
     border:1px solid var(--line);
@@ -232,15 +224,15 @@
     background:#fff;
   }
 
-  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .table-scroll{overflow-x:hidden;}
 
   table{width:100%;table-layout:fixed;border-collapse:collapse;}
   thead th{
     background:var(--accent);
     color:#fff;
-    font-size:var(--cell-font, 15px);
+    font-size:15px;
     font-weight:600;
-    text-align:center;
+    text-align:left;
     padding:10px 8px;
     white-space:normal;
     word-break:keep-all;
@@ -253,30 +245,32 @@
     min-width:0;
     overflow-wrap:break-word;
     word-break:break-word;
-    text-align:center;
   }
   tbody td[contenteditable="true"]{outline:none;}
   tbody td[contenteditable="true"]:focus{background:var(--accent-soft);}
   tbody tr:nth-child(even){background:#f6f8fc;}
-  .col-name{width:14%;cursor:pointer;}
-  .col-day{width:6%;cursor:pointer;}
-  .col-time{width:12%;}
+  .col-name{width:12%;cursor:pointer;}
+  .col-day{width:8%;cursor:pointer;}
+  .col-time{width:11%;}
   .col-place{width:14%;cursor:pointer;}
-  .col-round{width:6%;cursor:pointer;}
-  .col-paid{width:11%;cursor:pointer;}
-  .col-end{width:11%;}
+  .col-session{width:9%;cursor:pointer;}
   .col-fee{width:13%;}
+  .col-paid{width:16%;overflow:hidden;}
+  .paid-date-input{
+    width:100%;
+    max-width:100%;
+    box-sizing:border-box;
+    border:none;
+    background:transparent;
+    font-family:inherit;
+    font-size:clamp(11px, var(--cell-font, 18px), 17px);
+    color:inherit;
+    padding:0;
+  }
+  .paid-date-input:focus{outline:none;background:var(--accent-soft);}
   .picker-text{display:block;min-height:20px;}
-  .picker-text.paid-unpaid{color:var(--danger);}
   .col-del{width:44px;text-align:center;}
 
-  .fee-cell-inner{
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    gap:3px;
-  }
   .attend-toggle{
     display:inline-flex;
     align-items:center;
@@ -285,7 +279,7 @@
     height:28px;
     min-height:0;
     padding:0;
-    margin:0;
+    margin-right:6px;
     font-size:15px;
     font-weight:700;
     background:#fff;
@@ -303,10 +297,8 @@
   .col-fee[data-attended="true"] .attend-toggle{background:var(--accent);color:#fff;border-color:var(--accent);}
   .col-fee[data-attended="false"] .attend-toggle{background:#fff;color:var(--danger);border-color:var(--danger);}
   .col-fee[data-attended="false"] .fee-amount{color:var(--danger);text-decoration:line-through;}
-  .fee-amount-line{display:inline-flex;align-items:baseline;white-space:nowrap;}
   .fee-amount{display:inline-block;min-width:16px;outline:none;}
-  .fee-unit{font-size:14px;color:var(--sub);margin-left:2px;}
-
+  .fee-unit{font-size:14px;color:var(--sub);margin-left:3px;}
 
   .del-btn{
     background:transparent;
@@ -335,43 +327,23 @@
 
   .fee-summary{
     border-top:2px solid var(--accent);
-    padding:16px;
+    padding:12px 16px;
     background:#fafbfd;
-    display:flex;
-    flex-direction:column;
-    gap:12px;
   }
-  .fee-summary-card{
-    background:#fff;
-    border:1px solid var(--line);
-  }
-  .fee-summary-label{
-    font-size:13px;
-    font-weight:700;
-    color:var(--sub);
-    margin:0;
-    padding:9px 14px;
-    border-bottom:1px solid var(--line);
-    background:#f6f8fc;
-  }
-  .fee-summary-label .fee-summary-sub{font-weight:500;color:var(--sub);}
   .fee-summary-row{
     display:flex;
     justify-content:space-between;
-    align-items:baseline;
     gap:10px;
-    padding:8px 14px;
+    font-size:16px;
+    font-weight:600;
+    padding:4px 0;
   }
-  .fee-summary-row + .fee-summary-row{border-top:1px dashed var(--line);}
-  .fee-summary-row span:first-child{font-size:13px;font-weight:500;color:var(--sub);}
-  .fee-summary-row span:last-child{font-size:17px;font-weight:700;color:var(--ink);}
-  .fee-summary-row.deduct span:last-child{color:var(--accent);}
+  .fee-summary-row.deduct{color:var(--accent);}
 
-  .table-footer-row{
+  .export-row{
     display:flex;
-    justify-content:space-between;
     gap:10px;
-    margin-top:10px;
+    margin-top:16px;
     flex-wrap:wrap;
   }
 
@@ -437,28 +409,40 @@
   }
   .popover-backdrop.open{display:block;}
 
-  /* Custom date picker (replaces native <input type=date> for reliable iPad support) */
-  .date-popover{padding:14px;}
-  .dp-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
-  .dp-label{font-size:16px;font-weight:700;color:var(--ink);}
-  .dp-nav{
-    background:transparent;border:none;font-size:24px;line-height:1;
-    color:var(--accent);padding:4px 12px;min-height:0;font-weight:700;
+  /* Weekly archive */
+  .archive-panel{margin-top:24px;}
+  .archive-cumulative{
+    font-size:16px;
+    font-weight:700;
+    color:var(--accent);
+    padding:2px 2px 14px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:10px;
   }
-  .dp-nav:active{color:var(--accent-dark);}
-  .dp-weekdays{display:grid;grid-template-columns:repeat(7, 1fr);gap:4px;margin-bottom:4px;}
-  .dp-weekday{font-size:12px;text-align:center;color:var(--sub);font-weight:600;}
-  .dp-grid{display:grid;grid-template-columns:repeat(7, 1fr);gap:4px;}
-  .dp-blank{visibility:hidden;}
-  .dp-day{
-    background:#fff;border:1px solid var(--line);
-    font-size:15px;padding:9px 0;min-height:40px;color:var(--ink);
-    font-weight:500;
+  .archive-empty{
+    font-size:15px;
+    color:var(--sub);
+    padding:8px 2px;
   }
-  .dp-day:active{background:var(--accent-soft);}
-  .dp-day.dp-selected{background:var(--accent);color:#fff;border-color:var(--accent);}
-  .dp-footer{margin-top:12px;}
-  .dp-footer button{width:100%;}
+  .archive-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    background:#fff;
+    border:1px solid var(--line);
+    padding:12px 14px;
+    margin-bottom:8px;
+  }
+  .archive-info{min-width:0;}
+  .archive-title{font-size:16px;font-weight:600;}
+  .archive-date{font-size:13.5px;color:var(--sub);margin-top:2px;}
+  .archive-actions{display:flex;gap:8px;flex-shrink:0;}
+  .archive-actions button{
+    padding:8px 12px;
+    font-size:15px;
+    min-height:36px;
+  }
 
   .row-height-panel{margin-bottom:16px;}
   .row-height-control{display:flex;align-items:center;gap:12px;}
@@ -504,6 +488,7 @@
     gap:10px;
     margin-bottom:14px;
   }
+  .modal-title-input{flex:1;min-width:0;}
   .modal-close{
     background:transparent;
     border:none;
@@ -515,36 +500,18 @@
   }
   .modal-actions{display:flex;gap:10px;margin-top:16px;}
   .modal-actions button{flex:1;}
-  .pdf-modal-box{max-width:900px;}
-  .pdf-preview-scroll{
-    max-height:60vh;
-    overflow:auto;
-    border:1px solid var(--line);
-  }
-  .pdf-preview-scroll .sheet{border:none;}
 
   /* Mobile tweaks */
   @media (max-width: 480px){
     .app{padding:14px 10px 40px;}
     h1{font-size:19px;}
-    .sync-status{font-size:11px;padding:3px 7px;top:2px;}
-    .title-row{align-items:center;}
-    .default-fee-row{margin-top:22px;}
-    .week-title{font-size:18px;min-width:100%;order:1;}
-    .week-range-inline{font-size:12.5px;order:2;}
-    .week-nav{order:3;margin-left:auto;}
-    .week-nav-btn{padding:4px 10px;font-size:18px;}
-    .week-planner{grid-template-columns:repeat(auto-fit, minmax(64px, 1fr));gap:6px;}
-    .planner-day-head{font-size:11.5px;}
-    .planner-entry{font-size:11px;}
-    thead th{padding:6px 3px;}
-    tbody td{padding-left:3px;padding-right:3px;}
-    .attend-toggle{width:22px;height:22px;}
-    .fee-unit{font-size:11px;margin-left:1px;}
-    .col-del{width:26px;}
-    .del-btn{padding:2px;font-size:15px;min-height:0;}
-    .table-footer-row{flex-direction:column;}
-    .table-footer-row button{width:100%;}
+    .sync-status{position:static;display:inline-block;margin-top:6px;}
+    .title-row{flex-direction:column;align-items:center;}
+    .export-row{flex-direction:column;}
+    .export-row button{width:100%;}
+    .archive-item{flex-direction:column;align-items:flex-start;}
+    .archive-actions{width:100%;}
+    .archive-actions button{flex:1;}
     .modal-box{padding:12px;margin-top:8px;}
   }
 
@@ -564,24 +531,26 @@
     <span class="sync-status no-print" id="syncStatus">연결 중...</span>
   </div>
 
+  <div class="top-save-row no-print">
+    <button class="btn-primary" id="topSaveBtn">저장</button>
+  </div>
+
+  <div class="week-planner no-print" id="weekPlanner"></div>
+
   <div class="default-fee-row no-print">
-    <span class="default-fee-label">학생 기본 수업료</span>
+    <span class="default-fee-label">새 학생 기본 수업료</span>
     <input type="number" id="defaultFeeInput" min="0" step="1" value="50">
     <span class="default-fee-unit">불</span>
   </div>
 
   <div class="sheet-head">
-    <div class="week-title-row">
-      <input class="week-title" id="weekTitle" value="이번 주 축구교실 시간표">
-      <span class="week-range-inline" id="weekRange"></span>
-      <div class="week-nav no-print">
-        <button type="button" class="week-nav-btn" id="prevWeekBtn" aria-label="이전 주">&#8249;</button>
-        <button type="button" class="week-nav-btn" id="nextWeekBtn" aria-label="다음 주">&#8250;</button>
-      </div>
-    </div>
+    <input class="week-title" id="weekTitle" value="이번 주 축구교실 시간표">
   </div>
-
-  <div class="week-planner no-print" id="weekPlanner"></div>
+  <div class="week-sub-line">
+    <span class="week-range" id="weekRange"></span>
+    <span class="week-meta" id="weekMeta"></span>
+  </div>
+  <span class="editing-badge no-print" id="editingBadge"></span>
 
   <div class="sheet" id="sheet">
     <div class="table-scroll">
@@ -592,9 +561,8 @@
             <th class="col-day">요일</th>
             <th class="col-time">시간</th>
             <th class="col-place">장소</th>
-            <th class="col-round">회차</th>
+            <th class="col-session">회차</th>
             <th class="col-paid">납부일</th>
-            <th class="col-end">5회 종료일</th>
             <th class="col-fee">수업료</th>
             <th class="col-del no-print"></th>
           </tr>
@@ -604,32 +572,31 @@
     </div>
     <button class="add-row-btn no-print" id="addRowBtn">+ 행 추가</button>
     <div class="fee-summary" id="feeSummary">
-      <div class="fee-summary-card">
-        <p class="fee-summary-label">이번 주 수업료 수입 <span class="fee-summary-sub">(수업 횟수 기준)</span></p>
-        <div class="fee-summary-row"><span>예상</span><span id="feeExpected">0불</span></div>
-        <div class="fee-summary-row deduct" id="feeActualRow"><span>확정</span><span id="feeActual">0불</span></div>
-      </div>
-      <div class="fee-summary-card">
-        <p class="fee-summary-label">이번 주 수령액 <span class="fee-summary-sub">(5회차 결제 기준)</span></p>
-        <div class="fee-summary-row"><span>예상</span><span id="cashExpected">0불</span></div>
-        <div class="fee-summary-row deduct" id="cashActualRow"><span>확정</span><span id="cashActual">0불</span></div>
-      </div>
+      <div class="fee-summary-row"><span>예상 수업료</span><span id="feeExpected">0불</span></div>
+      <div class="fee-summary-row deduct" id="feeActualRow"><span>확정된 수업료</span><span id="feeActual">0불</span></div>
     </div>
   </div>
 
-  <div class="table-footer-row no-print">
-    <button class="btn-secondary" id="pdfBtn">PDF로 저장</button>
-    <button class="btn-ghost" id="editBaseBtn">기본 시간표 편집</button>
+  <div class="export-row no-print">
+    <button class="btn-primary" id="pdfBtn">PDF로 저장</button>
+    <button class="btn-secondary" id="saveWeekBtn">이번 주 저장</button>
+    <button class="btn-secondary" id="lastWeekBtn">지난주 시간표 그대로 불러오기</button>
+    <button class="btn-ghost" id="newWeekBtn">새 주로 시작</button>
+  </div>
+
+  <div class="panel archive-panel no-print">
+    <p class="panel-title">저장된 주간 기록</p>
+    <div class="archive-cumulative" id="archiveCumulative"></div>
+    <div id="archiveList"></div>
   </div>
 </div>
 
-<div class="modal-overlay no-print" id="baseModalOverlay">
+<div class="modal-overlay no-print" id="editModalOverlay">
   <div class="modal-box">
     <div class="modal-header">
-      <span class="week-title" style="font-size:19px;">기본 시간표 편집</span>
-      <button type="button" class="modal-close" id="baseModalCloseBtn">&times;</button>
+      <input class="week-title modal-title-input" id="modalWeekTitle" value="">
+      <button type="button" class="modal-close" id="modalCloseBtn">&times;</button>
     </div>
-    <p class="lead" style="margin:0 0 14px;">여기서 고친 내용은 다음 주로 이동할 때부터 자동 적용됨. 지금 표에는 바로 반영되지 않음.</p>
     <div class="sheet">
       <div class="table-scroll">
         <table>
@@ -639,28 +606,34 @@
               <th class="col-day">요일</th>
               <th class="col-time">시간</th>
               <th class="col-place">장소</th>
+              <th class="col-session">회차</th>
+              <th class="col-paid">납부일</th>
+              <th class="col-fee">수업료</th>
               <th class="col-del"></th>
             </tr>
           </thead>
-          <tbody id="baseModalTableBody"></tbody>
+          <tbody id="modalTableBody"></tbody>
         </table>
       </div>
-      <button class="add-row-btn" id="baseModalAddRowBtn">+ 행 추가</button>
+      <button class="add-row-btn" id="modalAddRowBtn">+ 행 추가</button>
+      <div class="fee-summary">
+        <div class="fee-summary-row"><span>예상 수업료</span><span id="modalFeeExpected">0불</span></div>
+        <div class="fee-summary-row deduct" id="modalFeeActualRow"><span>확정된 수업료</span><span id="modalFeeActual">0불</span></div>
+      </div>
     </div>
     <div class="modal-actions">
-      <button class="btn-primary" id="baseModalSaveBtn">저장</button>
-      <button class="btn-secondary" id="baseModalCancelBtn">취소</button>
+      <button class="btn-primary" id="modalSaveBtn">저장</button>
+      <button class="btn-secondary" id="modalCancelBtn">취소</button>
     </div>
   </div>
 </div>
 
 <div class="modal-overlay no-print" id="pdfModalOverlay">
-  <div class="modal-box pdf-modal-box">
+  <div class="modal-box">
     <div class="modal-header">
-      <span class="week-title" style="font-size:19px;">PDF 미리보기</span>
+      <span class="week-title" style="font-size:19px;">PDF 만들기 전 크기 조절</span>
       <button type="button" class="modal-close" id="pdfModalCloseBtn">&times;</button>
     </div>
-    <p class="lead" style="margin:0 0 14px;">아래 미리보기에서 칸 높이와 글자 크기 조절 후 PDF 저장 가능함.</p>
     <div class="panel row-height-panel" style="margin-bottom:16px;">
       <p class="panel-title">칸 높이 조절</p>
       <div class="row-height-control">
@@ -673,9 +646,6 @@
         <span class="row-height-value" id="pdfFontSizeValue">18px</span>
       </div>
     </div>
-    <div class="pdf-preview-scroll">
-      <div class="sheet" id="pdfPreviewSheet"></div>
-    </div>
     <div class="modal-actions">
       <button class="btn-primary" id="pdfConfirmBtn">PDF 만들기</button>
       <button class="btn-secondary" id="pdfModalCancelBtn">취소</button>
@@ -686,26 +656,9 @@
 <div class="popover-backdrop no-print" id="popoverBackdrop"></div>
 <div class="picker-popover no-print" id="pickerPopover">
   <div class="picker-list" id="pickerList"></div>
-  <div class="picker-add" id="pickerAddRow">
+  <div class="picker-add">
     <input type="text" id="newOptionInput" placeholder="새 항목 입력">
     <button id="newOptionBtn" type="button">추가</button>
-  </div>
-</div>
-
-<div class="picker-popover date-popover no-print" id="datePopover">
-  <div class="dp-header">
-    <button type="button" class="dp-nav" id="dpPrevBtn">&#8249;</button>
-    <span class="dp-label" id="dpLabel"></span>
-    <button type="button" class="dp-nav" id="dpNextBtn">&#8250;</button>
-  </div>
-  <div class="dp-weekdays">
-    <span class="dp-weekday">일</span><span class="dp-weekday">월</span><span class="dp-weekday">화</span>
-    <span class="dp-weekday">수</span><span class="dp-weekday">목</span><span class="dp-weekday">금</span>
-    <span class="dp-weekday">토</span>
-  </div>
-  <div class="dp-grid" id="dpGrid"></div>
-  <div class="dp-footer">
-    <button type="button" class="btn-ghost" id="dpClearBtn">미납으로 지우기</button>
   </div>
 </div>
 
@@ -714,33 +667,25 @@
   const tableBody = document.getElementById('tableBody');
   const addRowBtn = document.getElementById('addRowBtn');
   const weekTitle = document.getElementById('weekTitle');
+  const weekMeta = document.getElementById('weekMeta');
   const weekRangeEl = document.getElementById('weekRange');
+  const editingBadgeEl = document.getElementById('editingBadge');
   const pdfBtn = document.getElementById('pdfBtn');
-  const editBaseBtn = document.getElementById('editBaseBtn');
-  const prevWeekBtn = document.getElementById('prevWeekBtn');
-  const nextWeekBtn = document.getElementById('nextWeekBtn');
+  const saveWeekBtn = document.getElementById('saveWeekBtn');
+  const lastWeekBtn = document.getElementById('lastWeekBtn');
+  const newWeekBtn = document.getElementById('newWeekBtn');
   const sheet = document.getElementById('sheet');
+  const archiveList = document.getElementById('archiveList');
+  const archiveCumulativeEl = document.getElementById('archiveCumulative');
   const weekPlannerEl = document.getElementById('weekPlanner');
   const defaultFeeInput = document.getElementById('defaultFeeInput');
   const pickerPopover = document.getElementById('pickerPopover');
   const pickerListEl = document.getElementById('pickerList');
-  const pickerAddRow = document.getElementById('pickerAddRow');
   const popoverBackdrop = document.getElementById('popoverBackdrop');
   const newOptionInput = document.getElementById('newOptionInput');
   const newOptionBtn = document.getElementById('newOptionBtn');
-  const datePopover = document.getElementById('datePopover');
-  const dpPrevBtn = document.getElementById('dpPrevBtn');
-  const dpNextBtn = document.getElementById('dpNextBtn');
-  const dpLabel = document.getElementById('dpLabel');
-  const dpGrid = document.getElementById('dpGrid');
-  const dpClearBtn = document.getElementById('dpClearBtn');
-  const baseModalOverlay = document.getElementById('baseModalOverlay');
-  const baseModalCloseBtn = document.getElementById('baseModalCloseBtn');
-  const baseModalCancelBtn = document.getElementById('baseModalCancelBtn');
-  const baseModalSaveBtn = document.getElementById('baseModalSaveBtn');
-  const baseModalAddRowBtn = document.getElementById('baseModalAddRowBtn');
-  const baseModalTableBody = document.getElementById('baseModalTableBody');
   const syncStatusEl = document.getElementById('syncStatus');
+  const topSaveBtn = document.getElementById('topSaveBtn');
   const pdfModalOverlay = document.getElementById('pdfModalOverlay');
   const pdfModalCloseBtn = document.getElementById('pdfModalCloseBtn');
   const pdfModalCancelBtn = document.getElementById('pdfModalCancelBtn');
@@ -749,34 +694,28 @@
   const pdfRowHeightValue = document.getElementById('pdfRowHeightValue');
   const pdfFontSizeSlider = document.getElementById('pdfFontSizeSlider');
   const pdfFontSizeValue = document.getElementById('pdfFontSizeValue');
-  const pdfPreviewSheet = document.getElementById('pdfPreviewSheet');
   const feeExpectedEl = document.getElementById('feeExpected');
   const feeActualEl = document.getElementById('feeActual');
   const feeActualRowEl = document.getElementById('feeActualRow');
-  const cashExpectedEl = document.getElementById('cashExpected');
-  const cashActualEl = document.getElementById('cashActual');
-  const cashActualRowEl = document.getElementById('cashActualRow');
+  const editModalOverlay = document.getElementById('editModalOverlay');
+  const modalWeekTitle = document.getElementById('modalWeekTitle');
+  const modalCloseBtn = document.getElementById('modalCloseBtn');
+  const modalCancelBtn = document.getElementById('modalCancelBtn');
+  const modalSaveBtn = document.getElementById('modalSaveBtn');
+  const modalAddRowBtn = document.getElementById('modalAddRowBtn');
+  const modalTableBody = document.getElementById('modalTableBody');
+  const modalFeeExpectedEl = document.getElementById('modalFeeExpected');
+  const modalFeeActualEl = document.getElementById('modalFeeActual');
+  const modalFeeActualRowEl = document.getElementById('modalFeeActualRow');
 
   const CACHE_KEY = 'soccer_state_cache_v1';
 
   const DEFAULTS = {
     name:  ['오스카','엘리엇','임레온','브라이언','도라','엠레','래미','이안','샤르베시','앤쓴'],
     day:   ['월','화','수','목','금','토','일'],
-    place: ['홈랜드','메도뱅크','에핑','에릭 파크']
+    place: ['홈랜드','메도뱅크','에핑','에릭 파크'],
+    session: ['1','2','3','4','5']
   };
-
-  // 고정 시간표 기본값 — 사진 속 시간표 그대로. 앤쓴은 9월부터 시작이라 아직 제외.
-  const DEFAULT_BASE_SCHEDULE = [
-    ['오스카', '월', '4:00 pm', '홈랜드'],
-    ['엘리엇', '화', '3:30 pm', '메도뱅크'],
-    ['임레온', '수', '3:40 pm', '홈랜드'],
-    ['브라이언', '수', '6:30 am', '에핑'],
-    ['도라', '수', '7:30 am', '에핑'],
-    ['엠레', '목', '6:30 am', '에핑'],
-    ['래미', '토', '7:00 am', '홈랜드'],
-    ['이안', '토', '8:00 am', '홈랜드'],
-    ['샤르베시', '일', '7:00 am', '에릭 파크']
-  ];
 
   function loadCache(){
     try{
@@ -792,14 +731,10 @@
   const cached = loadCache();
   let fieldData = cached && cached.locations ? cached.locations : {
     name: DEFAULTS.name.slice(), day: DEFAULTS.day.slice(),
-    place: DEFAULTS.place.slice()
+    place: DEFAULTS.place.slice(), session: DEFAULTS.session.slice()
   };
-  ['name','day','place'].forEach(function(f){ if(!fieldData[f]) fieldData[f] = []; });
-  // weekEntries is keyed by each week's Monday date ("YYYY-MM-DD") so the
-  // ◀ ▶ arrows can jump straight to any week's saved data (or fall back to
-  // generating it from the base schedule if that week hasn't been visited).
-  let weekEntries = (cached && cached.weekEntries && typeof cached.weekEntries === 'object') ? cached.weekEntries : {};
-  let baseSchedule = (cached && Array.isArray(cached.baseSchedule)) ? cached.baseSchedule : DEFAULT_BASE_SCHEDULE.map(function(r){ return r.slice(); });
+  ['name','day','place','session'].forEach(function(f){ if(!fieldData[f]) fieldData[f] = []; });
+  let weeksArchive = cached && cached.weeks ? cached.weeks : [];
   let defaultFee = cached && cached.defaultFee ? cached.defaultFee : '50';
   defaultFeeInput.value = defaultFee;
   defaultFeeInput.addEventListener('change', function(){
@@ -809,6 +744,7 @@
     pushState();
   });
   let localUpdatedAt = cached && cached.updatedAt ? cached.updatedAt : 0;
+  let currentWeekId = null;
 
   function setSyncStatus(text, cls){
     syncStatusEl.textContent = text;
@@ -816,59 +752,38 @@
   }
 
   // Firestore does not allow arrays nested inside arrays. Internally each row
-  // is a plain array (name/day/time/place/round/paid/end/fee/attended), and
-  // a week's rows is an array of those rows — an array of arrays — which
+  // is a plain array (name/day/time/place/note/fee/paid/attended), and
+  // week.rows is an array of those rows — an array of arrays — which
   // Firestore rejects outright. We only need to reshape rows into objects
   // when talking to Firestore; localStorage and the rest of the app keep
   // using the simpler array form untouched.
   function rowToFsObj(r){
     r = r || [];
-    return { name:r[0]||'', day:r[1]||'', time:r[2]||'', place:r[3]||'', round:r[4]||'1', paid:r[5]||'', end:r[6]||'', fee:r[7]||'', attended: (r[8] !== 'false' && r[8] !== false) };
+    return { name:r[0]||'', day:r[1]||'', time:r[2]||'', place:r[3]||'', session:r[4]||'', fee:r[5]||'', paid:r[6]||'', attended: (r[7] !== 'false' && r[7] !== false) };
   }
   function rowFromFsObj(r){
     if (Array.isArray(r)) return r; // already in array form (e.g. old cached shape)
     r = r || {};
-    return [r.name||'', r.day||'', r.time||'', r.place||'', r.round||'1', r.paid||'', r.end||'', r.fee||'', r.attended === false ? 'false' : 'true'];
+    return [r.name||'', r.day||'', r.time||'', r.place||'', r.session||'', r.fee||'', r.paid||'', r.attended === false ? 'false' : 'true'];
   }
-  function weekEntriesToFirestore(entries){
-    const out = {};
-    Object.keys(entries).forEach(function(key){
-      const e = entries[key] || {};
-      out[key] = { title: e.title || '', rows: (e.rows || []).map(rowToFsObj) };
+  function weeksToFirestore(weeks){
+    return weeks.map(function(w){
+      return Object.assign({}, w, { rows: (w.rows || []).map(rowToFsObj) });
     });
-    return out;
   }
-  function weekEntriesFromFirestore(entries){
-    const out = {};
-    Object.keys(entries || {}).forEach(function(key){
-      const e = entries[key] || {};
-      out[key] = { title: e.title || '', rows: (e.rows || []).map(rowFromFsObj) };
+  function weeksFromFirestore(weeks){
+    return (weeks || []).map(function(w){
+      return Object.assign({}, w, { rows: (w.rows || []).map(rowFromFsObj) });
     });
-    return out;
-  }
-  function baseRowToFsObj(r){
-    r = r || [];
-    return { name:r[0]||'', day:r[1]||'', time:r[2]||'', place:r[3]||'' };
-  }
-  function baseRowFromFsObj(r){
-    if (Array.isArray(r)) return r;
-    r = r || {};
-    return [r.name||'', r.day||'', r.time||'', r.place||''];
-  }
-  function baseScheduleToFirestore(rows){
-    return (rows || []).map(baseRowToFsObj);
-  }
-  function baseScheduleFromFirestore(rows){
-    return (rows || []).map(baseRowFromFsObj);
   }
 
   function pushState(){
     localUpdatedAt = Date.now();
-    const cachePayload = { locations: fieldData, weekEntries: weekEntries, baseSchedule: baseSchedule, defaultFee: defaultFee, updatedAt: localUpdatedAt };
+    const cachePayload = { locations: fieldData, weeks: weeksArchive, defaultFee: defaultFee, updatedAt: localUpdatedAt };
     saveCache(cachePayload);
     if (window._fbSave){
       setSyncStatus('저장 중...', '');
-      const fsPayload = { locations: fieldData, weekEntries: weekEntriesToFirestore(weekEntries), baseSchedule: baseScheduleToFirestore(baseSchedule), defaultFee: defaultFee, updatedAt: localUpdatedAt };
+      const fsPayload = { locations: fieldData, weeks: weeksToFirestore(weeksArchive), defaultFee: defaultFee, updatedAt: localUpdatedAt };
       Promise.resolve().then(function(){ return window._fbSave(fsPayload); })
         .then(function(){ setSyncStatus('동기화됨', 'ok'); })
         .catch(function(err){
@@ -891,15 +806,15 @@
           return;
         }
         fieldData = remote.locations || fieldData;
-        ['name','day','place'].forEach(function(f){ if(!fieldData[f]) fieldData[f] = []; });
-        weekEntries = weekEntriesFromFirestore(remote.weekEntries || {});
-        if (remote.baseSchedule) baseSchedule = baseScheduleFromFirestore(remote.baseSchedule);
+        ['name','day','place','session'].forEach(function(f){ if(!fieldData[f]) fieldData[f] = []; });
+        weeksArchive = weeksFromFirestore(remote.weeks || []);
         if (remote.defaultFee){
           defaultFee = remote.defaultFee;
           defaultFeeInput.value = defaultFee;
         }
         localUpdatedAt = remoteUpdatedAt;
-        saveCache({ locations: fieldData, weekEntries: weekEntries, baseSchedule: baseSchedule, defaultFee: defaultFee, updatedAt: localUpdatedAt });
+        saveCache({ locations: fieldData, weeks: weeksArchive, defaultFee: defaultFee, updatedAt: localUpdatedAt });
+        renderArchive();
         setSyncStatus('동기화됨', 'ok');
       } else {
         pushState();
@@ -916,7 +831,7 @@
   // size changes or the table's row count/content changes meaningfully.
   let autoFontSize = 18;
   let autoRowPadding = 14;
-  const AUTOFIT_SIZES = [26, 24, 22, 20, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9];
+  const AUTOFIT_SIZES = [22, 20, 18, 17, 16, 15, 14, 13, 12, 11];
 
   function applyLiveSizing(fontPx, padPx){
     document.documentElement.style.setProperty('--cell-font', fontPx + 'px');
@@ -957,77 +872,59 @@
     autoFitTimer = setTimeout(autoFitTable, 200);
   });
 
-  // ---- PDF preview popup ----
-  // The popup gets its own copy of the table (a clone of the live "sheet",
-  // with editing controls like the delete column and "+ 행 추가" stripped
-  // out). The height/font sliders resize only this copy — via CSS
-  // variables scoped to #pdfPreviewSheet — so the background table on the
-  // page underneath is never touched.
-  function applyPdfPreviewSizing(fontPx, padPx){
-    pdfPreviewSheet.style.setProperty('--cell-font', fontPx + 'px');
-    pdfPreviewSheet.style.setProperty('--cell-py', padPx + 'px');
-  }
+  // ---- PDF settings popup ----
   function applyPdfSliderLabel(){
     pdfRowHeightValue.textContent = pdfRowHeightSlider.value + 'px';
     pdfFontSizeValue.textContent = pdfFontSizeSlider.value + 'px';
   }
-  function buildPdfPreview(){
-    pdfPreviewSheet.innerHTML = sheet.innerHTML;
-    pdfPreviewSheet.querySelectorAll('.no-print').forEach(function(el){ el.remove(); });
-    pdfPreviewSheet.querySelectorAll('[id]').forEach(function(el){ el.removeAttribute('id'); });
-    pdfPreviewSheet.querySelectorAll('[contenteditable]').forEach(function(el){ el.removeAttribute('contenteditable'); });
-  }
   function openPdfModal(){
-    buildPdfPreview();
     pdfRowHeightSlider.value = autoRowPadding;
     pdfFontSizeSlider.value = autoFontSize;
     applyPdfSliderLabel();
-    applyPdfPreviewSizing(parseInt(pdfFontSizeSlider.value, 10), parseInt(pdfRowHeightSlider.value, 10));
+    applyLiveSizing(parseInt(pdfFontSizeSlider.value, 10), parseInt(pdfRowHeightSlider.value, 10));
     pdfModalOverlay.classList.add('open');
   }
-  function closePdfModal(){
+  function closePdfModal(revert){
+    if (revert) applyLiveSizing(autoFontSize, autoRowPadding);
     pdfModalOverlay.classList.remove('open');
-    pdfPreviewSheet.innerHTML = '';
   }
   pdfRowHeightSlider.addEventListener('input', function(){
     applyPdfSliderLabel();
-    applyPdfPreviewSizing(parseInt(pdfFontSizeSlider.value, 10), parseInt(pdfRowHeightSlider.value, 10));
+    applyLiveSizing(parseInt(pdfFontSizeSlider.value, 10), parseInt(pdfRowHeightSlider.value, 10));
   });
   pdfFontSizeSlider.addEventListener('input', function(){
     applyPdfSliderLabel();
-    applyPdfPreviewSizing(parseInt(pdfFontSizeSlider.value, 10), parseInt(pdfRowHeightSlider.value, 10));
+    applyLiveSizing(parseInt(pdfFontSizeSlider.value, 10), parseInt(pdfRowHeightSlider.value, 10));
   });
-  pdfModalCloseBtn.addEventListener('click', closePdfModal);
-  pdfModalCancelBtn.addEventListener('click', closePdfModal);
+  pdfModalCloseBtn.addEventListener('click', function(){ closePdfModal(true); });
+  pdfModalCancelBtn.addEventListener('click', function(){ closePdfModal(true); });
 
-  // The title/date-range shown are tied to a tracked "week Monday" so the
-  // ◀ ▶ arrows can move it forward/back one week at a time.
-  function mondayOf(d){
+  function todayLabel(){
+    const d = new Date();
+    return `작성일 ${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+  }
+  weekMeta.textContent = todayLabel();
+
+  function getWeekRangeLabel(){
+    const d = new Date();
     const day = d.getDay(); // 0=Sun ... 6=Sat
     const diffToMonday = (day === 0 ? -6 : 1 - day);
     const monday = new Date(d);
     monday.setDate(d.getDate() + diffToMonday);
-    monday.setHours(0,0,0,0);
-    return monday;
-  }
-  let currentWeekMonday = mondayOf(new Date());
-
-  function isoDateStr(d){
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  }
-
-  function weekRangeLabelFor(monday){
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
     function fmt(dt){ return `${dt.getMonth() + 1}.${dt.getDate()}`; }
-    return `(${fmt(monday)}~${fmt(sunday)})`;
+    return `${fmt(monday)} ~ ${fmt(sunday)}`;
   }
+  weekRangeEl.textContent = getWeekRangeLabel();
 
-  function weekTitleFor(monday){
-    const month = monday.getMonth() + 1;
-    const weekOfMonth = Math.ceil(monday.getDate() / 7);
+  function autoWeekTitle(){
+    const d = new Date();
+    const month = d.getMonth() + 1;
+    const weekOfMonth = Math.ceil(d.getDate() / 7);
     return `${month}월 ${weekOfMonth}째주 시간표`;
   }
+  weekTitle.value = autoWeekTitle();
 
   let activePickerCell = null;
   let activeField = null;
@@ -1130,231 +1027,39 @@
     amount.className = 'fee-amount';
     amount.contentEditable = 'true';
     amount.textContent = fee || '';
-    td.dataset.fee = String(parseFee(fee));
-    amount.addEventListener('input', function(){
-      // While editable (round 1 only — see updateFeeCellDisplay), the
-      // visible number is the 5-session cycle total. Store it back as the
-      // per-session rate so every other calculation keeps using that.
-      const total = parseFee(amount.textContent);
-      td.dataset.fee = String(Math.round(total / 5));
-      if (onChange) onChange();
-    });
+    amount.addEventListener('input', function(){ if (onChange) onChange(); });
 
     const unit = document.createElement('span');
     unit.className = 'fee-unit';
     unit.textContent = '불';
 
-    const amountLine = document.createElement('span');
-    amountLine.className = 'fee-amount-line';
-    amountLine.appendChild(amount);
-    amountLine.appendChild(unit);
-
-    const inner = document.createElement('div');
-    inner.className = 'fee-cell-inner';
-    inner.appendChild(toggle);
-    inner.appendChild(amountLine);
-    td.appendChild(inner);
+    td.appendChild(toggle);
+    td.appendChild(amount);
+    td.appendChild(unit);
     return td;
   }
 
-  // Round 1 shows the full 5-session cycle total (per-session rate × 5) —
-  // that's the lump sum actually collected. Rounds 2~5 already got their
-  // total accounted for at round 1, so showing the same number again is
-  // redundant; only the attendance check stays visible for those weeks.
-  function updateFeeCellDisplay(tr){
-    const feeTd = tr.querySelector('.col-fee');
-    if (!feeTd) return;
-    const amount = feeTd.querySelector('.fee-amount');
-    const amountLine = feeTd.querySelector('.fee-amount-line');
-    const roundTd = tr.querySelector('.col-round');
-    const round = roundTd ? roundTd.querySelector('.picker-text').textContent.trim() : '1';
-    const perSession = parseFee(feeTd.dataset.fee);
-    if (round === '1'){
-      amount.contentEditable = 'true';
-      amount.textContent = String(perSession * 5);
-      amountLine.style.display = '';
-    } else {
-      amount.contentEditable = 'false';
-      amount.textContent = '';
-      amountLine.style.display = 'none';
-    }
-  }
-
-  // ---- Session round (1~5) & fixed-schedule date math ----
-  const DAY_TO_NUM = {'일':0,'월':1,'화':2,'수':3,'목':4,'금':5,'토':6};
-
-  function formatDateDisplay(v, emptyLabel){
-    if (!v) return emptyLabel !== undefined ? emptyLabel : '미납';
-    const d = new Date(v + 'T00:00:00');
-    if (isNaN(d)) return v;
-    return `${d.getMonth() + 1}/${d.getDate()}`;
-  }
-
-  // Given the row's fixed weekday and its current round (1~5), figure out
-  // when the 5th session will land, assuming the child attends every week
-  // from now on (the printed schedule is fixed; only occasional absences
-  // shift things, which the parent handles by hand). This only fills in
-  // the 5회 종료일 cell while it's still empty — once a date has been
-  // picked (by this auto-fill or manually), it's left alone so a parent
-  // can freely correct it if a session gets skipped.
-  function calcSessionEndDate(dayKr, round){
-    const dow = DAY_TO_NUM[dayKr];
-    const r = parseInt(round, 10);
-    if (dow === undefined || !r || r < 1 || r > 5) return null;
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    const diff = (dow - today.getDay() + 7) % 7; // this week's session (today counts as 0)
-    const thisSession = new Date(today);
-    thisSession.setDate(today.getDate() + diff);
-    const remaining = 5 - r;
-    const endDate = new Date(thisSession);
-    endDate.setDate(thisSession.getDate() + remaining * 7);
-    return endDate;
-  }
-
-  function makeRoundPickerCell(text, colClass){
-    const td = document.createElement('td');
-    td.className = colClass;
-    const span = document.createElement('span');
-    span.className = 'picker-text';
-    span.textContent = text || '1';
-    td.appendChild(span);
-    td.addEventListener('click', function(){
-      openPickerPopover(td, 'round');
-    });
-    return td;
-  }
-
-  function updateEndDateCell(tr){
-    const endTd = tr.querySelector('.col-end');
-    if (!endTd || endTd.dataset.value) return; // already has a date (auto-filled earlier or picked manually) — leave it alone
-    const dayTd = tr.querySelector('.col-day');
-    const roundTd = tr.querySelector('.col-round');
-    const dayText = dayTd ? dayTd.querySelector('.picker-text').textContent.trim() : '';
-    const roundText = roundTd ? roundTd.querySelector('.picker-text').textContent.trim() : '';
-    const d = calcSessionEndDate(dayText, roundText);
-    if (!d) return;
-    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    endTd.dataset.value = iso;
-    endTd.querySelector('.picker-text').textContent = formatDateDisplay(iso, '-');
-  }
-
-  // Rounds 2~5 of a payment cycle repeat the exact same 납부일 (it's
-  // carried forward automatically), so showing that same date 5 times in a
-  // row is just noise. Round 1 shows the real date; rounds 2~5 show a
-  // simple 완료/미납 status instead. The actual date is still stored and
-  // still editable by tapping the cell — only the round-1 row shows it.
-  function updatePaidCellDisplay(tr){
-    const paidTd = tr.querySelector('.col-paid');
-    if (!paidTd) return;
-    const span = paidTd.querySelector('.picker-text');
-    const iso = paidTd.dataset.value;
-    span.classList.remove('paid-done', 'paid-unpaid');
-    span.textContent = formatDateDisplay(iso, '미납');
-    if (!iso) span.classList.add('paid-unpaid');
-  }
-
-  // ---- Custom date picker (used instead of native <input type=date>,
-  // which doesn't reliably open on iPad/iPhone Safari) ----
-  let activeDateCell = null;
-  let dpYear = 0, dpMonth = 0;
-
-  function openDatePopover(td){
-    activeDateCell = td;
-    const existing = td.dataset.value;
-    const base = (existing && /^\d{4}-\d{2}-\d{2}$/.test(existing)) ? new Date(existing + 'T00:00:00') : new Date();
-    dpYear = base.getFullYear();
-    dpMonth = base.getMonth();
-    renderDatePopover();
-    datePopover.classList.add('open');
-    popoverBackdrop.classList.add('open');
-  }
-  function closeDatePopover(){
-    datePopover.classList.remove('open');
-    if (!pickerPopover.classList.contains('open')) popoverBackdrop.classList.remove('open');
-    activeDateCell = null;
-  }
-  function renderDatePopover(){
-    dpLabel.textContent = dpYear + '년 ' + (dpMonth + 1) + '월';
-    dpGrid.innerHTML = '';
-    const selectedIso = activeDateCell ? activeDateCell.dataset.value : '';
-    const firstDow = new Date(dpYear, dpMonth, 1).getDay();
-    const daysInMonth = new Date(dpYear, dpMonth + 1, 0).getDate();
-    for (let i = 0; i < firstDow; i++){
-      const blank = document.createElement('span');
-      blank.className = 'dp-blank';
-      dpGrid.appendChild(blank);
-    }
-    for (let d = 1; d <= daysInMonth; d++){
-      const iso = `${dpYear}-${String(dpMonth + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'dp-day' + (iso === selectedIso ? ' dp-selected' : '');
-      btn.textContent = d;
-      btn.addEventListener('click', function(){
-        if (activeDateCell){
-          activeDateCell.dataset.value = iso;
-          if (activeDateCell.classList.contains('col-paid')){
-            const tr = activeDateCell.closest('tr');
-            if (tr) updatePaidCellDisplay(tr);
-          } else {
-            activeDateCell.querySelector('.picker-text').textContent = formatDateDisplay(iso, activeDateCell.dataset.emptyLabel);
-          }
-        }
-        closeDatePopover();
-        scheduleAutosave();
-      });
-      dpGrid.appendChild(btn);
-    }
-  }
-  dpPrevBtn.addEventListener('click', function(){
-    dpMonth--; if (dpMonth < 0){ dpMonth = 11; dpYear--; }
-    renderDatePopover();
-  });
-  dpNextBtn.addEventListener('click', function(){
-    dpMonth++; if (dpMonth > 11){ dpMonth = 0; dpYear++; }
-    renderDatePopover();
-  });
-  dpClearBtn.addEventListener('click', function(){
-    if (activeDateCell){
-      activeDateCell.dataset.value = '';
-      if (activeDateCell.classList.contains('col-paid')){
-        const tr = activeDateCell.closest('tr');
-        if (tr) updatePaidCellDisplay(tr);
-      } else {
-        activeDateCell.querySelector('.picker-text').textContent = formatDateDisplay('', activeDateCell.dataset.emptyLabel);
-      }
-    }
-    closeDatePopover();
-    scheduleAutosave();
-  });
-
-  function makeDatePickerCell(isoValue, cls, emptyLabel){
+  function makeDateCell(text, cls){
     const td = document.createElement('td');
     td.className = cls || '';
-    td.dataset.value = (isoValue && /^\d{4}-\d{2}-\d{2}$/.test(isoValue)) ? isoValue : '';
-    td.dataset.emptyLabel = emptyLabel !== undefined ? emptyLabel : '미납';
-    const span = document.createElement('span');
-    span.className = 'picker-text';
-    span.textContent = formatDateDisplay(td.dataset.value, td.dataset.emptyLabel);
-    td.appendChild(span);
-    td.addEventListener('click', function(){
-      openDatePopover(td);
-    });
+    const input = document.createElement('input');
+    input.type = 'date';
+    input.className = 'paid-date-input';
+    if (text && /^\d{4}-\d{2}-\d{2}$/.test(text)) input.value = text;
+    td.appendChild(input);
     return td;
   }
 
   function addRowTo(tbodyEl, data, onChange){
-    data = data || ['', '', '', '', '1', '', '', defaultFee, ''];
+    data = data || ['', '', '', '', '', defaultFee, '', ''];
     const tr = document.createElement('tr');
     tr.appendChild(makePickerCell(data[0], 'col-name', 'name'));
     tr.appendChild(makePickerCell(data[1], 'col-day', 'day'));
-    tr.appendChild(makeEditableCell(data[2], 'col-time', function(){ if (tbodyEl === tableBody){ renderWeekPlanner(); scheduleAutosave(); } }));
+    tr.appendChild(makeEditableCell(data[2], 'col-time', function(){ if (tbodyEl === tableBody) renderWeekPlanner(); }));
     tr.appendChild(makePickerCell(data[3], 'col-place', 'place'));
-    tr.appendChild(makeRoundPickerCell(data[4], 'col-round'));
-    tr.appendChild(makeDatePickerCell(data[5], 'col-paid', '미납'));
-    tr.appendChild(makeDatePickerCell(data[6], 'col-end', '-'));
-    tr.appendChild(makeFeeCell(data[7], normalizeAttended(data[8]), onChange));
+    tr.appendChild(makePickerCell(data[4], 'col-session', 'session'));
+    tr.appendChild(makeDateCell(data[6], 'col-paid'));
+    tr.appendChild(makeFeeCell(data[5], normalizeAttended(data[7]), onChange));
 
     const delTd = document.createElement('td');
     delTd.className = 'col-del no-print';
@@ -1371,9 +1076,6 @@
     tr.appendChild(delTd);
 
     tbodyEl.appendChild(tr);
-    updateEndDateCell(tr);
-    updatePaidCellDisplay(tr);
-    updateFeeCellDisplay(tr);
   }
 
   function getRowsFrom(tbodyEl){
@@ -1381,66 +1083,47 @@
       const cells = tr.querySelectorAll('td');
       const feeTd = tr.querySelector('.col-fee');
       const paidTd = tr.querySelector('.col-paid');
-      const endTd = tr.querySelector('.col-end');
-      const roundTd = tr.querySelector('.col-round');
       return [
         cells[0].querySelector('.picker-text').textContent.trim(),
         cells[1].querySelector('.picker-text').textContent.trim(),
         cells[2].textContent.trim(),
         cells[3].querySelector('.picker-text').textContent.trim(),
-        roundTd.querySelector('.picker-text').textContent.trim(),
-        paidTd.dataset.value || '',
-        endTd.dataset.value || '',
-        feeTd.dataset.fee || '',
+        cells[4].querySelector('.picker-text').textContent.trim(),
+        feeTd.querySelector('.fee-amount').textContent.trim(),
+        paidTd.querySelector('input').value.trim(),
         feeTd.getAttribute('data-attended') || ''
       ];
     });
   }
 
-  function addRow(data){ addRowTo(tableBody, data, function(){ recalcSummary(); scheduleAutosave(); }); scheduleAutoFit(); renderWeekPlanner(); }
+  function addRow(data){ addRowTo(tableBody, data, recalcSummary); scheduleAutoFit(); renderWeekPlanner(); }
 
-  addRowBtn.addEventListener('click', function(){ addRow(); recalcSummary(); scheduleAutosave(); });
+  addRowBtn.addEventListener('click', function(){ addRow(); recalcSummary(); });
 
   // ---- Shared picker popover ----
   function renderPickerList(){
     pickerListEl.innerHTML = '';
-    const isRound = activeField === 'round';
-    const options = isRound ? ['1','2','3','4','5'] : fieldData[activeField];
-    options.forEach(function(opt){
+    fieldData[activeField].forEach(function(opt){
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'picker-option';
-      btn.textContent = isRound ? (opt + '회차') : opt;
-      if (!isRound){
-        const del = document.createElement('span');
-        del.className = 'del-option';
-        del.innerHTML = '&#10005;';
-        del.addEventListener('click', function(e){
-          e.stopPropagation();
-          fieldData[activeField] = fieldData[activeField].filter(function(o){ return o !== opt; });
-          pushState();
-          renderPickerList();
-        });
-        btn.appendChild(del);
-      }
+      btn.textContent = opt;
+      const del = document.createElement('span');
+      del.className = 'del-option';
+      del.innerHTML = '&#10005;';
+      del.addEventListener('click', function(e){
+        e.stopPropagation();
+        fieldData[activeField] = fieldData[activeField].filter(function(o){ return o !== opt; });
+        pushState();
+        renderPickerList();
+      });
+      btn.appendChild(del);
       btn.addEventListener('click', function(){
-        const cellTd = activePickerCell;
-        const changedField = activeField;
-        const isMainTable = cellTd && cellTd.closest('tbody') === tableBody;
-        if (cellTd){
-          cellTd.querySelector('.picker-text').textContent = opt;
+        if (activePickerCell){
+          activePickerCell.querySelector('.picker-text').textContent = opt;
         }
         closePickerPopover();
-        if (isMainTable) renderWeekPlanner();
-        if (cellTd && (changedField === 'day' || changedField === 'round')){
-          const tr = cellTd.closest('tr');
-          if (tr) updateEndDateCell(tr);
-          if (tr && changedField === 'round'){
-            updatePaidCellDisplay(tr);
-            updateFeeCellDisplay(tr);
-          }
-        }
-        if (isMainTable) scheduleAutosave();
+        renderWeekPlanner();
       });
       pickerListEl.appendChild(btn);
     });
@@ -1451,43 +1134,31 @@
     activeField = field;
     renderPickerList();
     newOptionInput.value = '';
-    pickerAddRow.style.display = (field === 'round') ? 'none' : 'flex';
     pickerPopover.classList.add('open');
     popoverBackdrop.classList.add('open');
   }
 
   function closePickerPopover(){
     pickerPopover.classList.remove('open');
-    if (!datePopover.classList.contains('open')) popoverBackdrop.classList.remove('open');
+    popoverBackdrop.classList.remove('open');
     activePickerCell = null;
     activeField = null;
   }
 
-  popoverBackdrop.addEventListener('click', function(){
-    closePickerPopover();
-    closeDatePopover();
-  });
+  popoverBackdrop.addEventListener('click', closePickerPopover);
 
   function addNewOption(){
     const val = newOptionInput.value.trim();
-    if (!val || !activeField || activeField === 'round') return;
+    if (!val || !activeField) return;
     if (fieldData[activeField].indexOf(val) === -1){
       fieldData[activeField].push(val);
       pushState();
     }
-    const cellTd = activePickerCell;
-    const changedField = activeField;
-    const isMainTable = cellTd && cellTd.closest('tbody') === tableBody;
-    if (cellTd){
-      cellTd.querySelector('.picker-text').textContent = val;
+    if (activePickerCell){
+      activePickerCell.querySelector('.picker-text').textContent = val;
     }
     closePickerPopover();
-    if (isMainTable) renderWeekPlanner();
-    if (cellTd && changedField === 'day'){
-      const tr = cellTd.closest('tr');
-      if (tr) updateEndDateCell(tr);
-    }
-    if (isMainTable) scheduleAutosave();
+    renderWeekPlanner();
   }
   newOptionBtn.addEventListener('click', addNewOption);
   newOptionInput.addEventListener('keydown', function(e){
@@ -1500,26 +1171,6 @@
   }
 
   const CANONICAL_DAYS = ['월', '화', '수', '목', '금', '토', '일'];
-  const CANONICAL_DAY_OFFSET = {'월':0,'화':1,'수':2,'목':3,'금':4,'토':5,'일':6};
-
-  function monthDayLabel(offsetDays){
-    const d = new Date(currentWeekMonday);
-    d.setDate(currentWeekMonday.getDate() + offsetDays);
-    return `${d.getMonth() + 1}/${d.getDate()}`;
-  }
-
-  // Parses times like "4:00 pm", "6:30am", "7 pm" into minutes-since-midnight
-  // for sorting; unparseable text sorts to the end so it doesn't crash the order.
-  function parseTimeToMinutes(text){
-    const m = String(text || '').trim().toLowerCase().match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/);
-    if (!m) return Infinity;
-    let hour = parseInt(m[1], 10);
-    const minute = m[2] ? parseInt(m[2], 10) : 0;
-    const meridiem = m[3];
-    if (meridiem === 'pm' && hour !== 12) hour += 12;
-    if (meridiem === 'am' && hour === 12) hour = 0;
-    return hour * 60 + minute;
-  }
 
   function renderWeekPlanner(){
     const rows = getCurrentRows();
@@ -1531,9 +1182,6 @@
       if (!groups[day]){ groups[day] = []; order.push(day); }
       groups[day].push({ time: r[2] || '', name: r[0] || '(이름 없음)' });
     });
-    order.forEach(function(day){
-      groups[day].sort(function(a, b){ return parseTimeToMinutes(a.time) - parseTimeToMinutes(b.time); });
-    });
 
     weekPlannerEl.innerHTML = '';
     order.forEach(function(day){
@@ -1543,8 +1191,7 @@
 
       const head = document.createElement('div');
       head.className = 'planner-day-head';
-      const offset = CANONICAL_DAY_OFFSET[day];
-      head.textContent = offset !== undefined ? (day + ' ' + monthDayLabel(offset)) : day;
+      head.textContent = day;
       col.appendChild(head);
 
       if (entries.length === 0){
@@ -1574,197 +1221,220 @@
   function computeTotals(rows){
     let expected = 0, actual = 0;
     rows.forEach(function(r){
-      const fee = parseFee(r[7]);
-      const state = r[8] || '';
+      const fee = parseFee(r[5]);
+      const state = r[7] || '';
       if (state !== 'false') expected += fee;
       if (state === 'true') actual += fee;
     });
     return { expected: expected, actual: actual };
   }
 
-  // Cash collection happens once per 5-round cycle (at round 1), in one
-  // lump sum — a different rhythm from the per-session revenue above.
-  // expected = total that should come in this week (round-1 rows × 5);
-  // actual = the portion of that already marked as paid (납부일 set).
-  function computeCashTotals(rows){
-    let expected = 0, actual = 0;
-    rows.forEach(function(r){
-      if (r[4] !== '1') return;
-      const total = parseFee(r[7]) * 5;
-      expected += total;
-      if (r[5]) actual += total;
-    });
-    return { expected: expected, actual: actual };
-  }
-
-  function buildRecalc(getRowsFn, expectedEl, actualEl, actualRowEl, cashExpectedElArg, cashActualElArg, cashActualRowElArg){
+  function buildRecalc(getRowsFn, expectedEl, actualEl, actualRowEl){
     return function(){
-      const rows = getRowsFn();
-      const totals = computeTotals(rows);
+      const totals = computeTotals(getRowsFn());
       expectedEl.textContent = formatWon(totals.expected);
       actualEl.textContent = formatWon(totals.actual);
       actualRowEl.style.display = 'flex';
-      if (cashExpectedElArg){
-        const cash = computeCashTotals(rows);
-        cashExpectedElArg.textContent = formatWon(cash.expected);
-        cashActualElArg.textContent = formatWon(cash.actual);
-        cashActualRowElArg.style.display = 'flex';
-      }
     };
   }
 
-  const recalcSummary = buildRecalc(getCurrentRows, feeExpectedEl, feeActualEl, feeActualRowEl, cashExpectedEl, cashActualEl, cashActualRowEl);
+  const recalcSummary = buildRecalc(getCurrentRows, feeExpectedEl, feeActualEl, feeActualRowEl);
   recalcSummary();
 
-  // ---- Autosave: every edit to the current week's table is persisted
-  // (debounced) under this week's Monday date, so there's no separate
-  // "저장" button to remember to click.
-  let autosaveTimer = null;
-  function saveCurrentWeekNow(){
-    const key = isoDateStr(currentWeekMonday);
-    weekEntries[key] = { title: weekTitle.value || '', rows: getCurrentRows() };
-    pushState();
-  }
-  function scheduleAutosave(){
-    clearTimeout(autosaveTimer);
-    autosaveTimer = setTimeout(saveCurrentWeekNow, 500);
-  }
-  weekTitle.addEventListener('input', scheduleAutosave);
+  const recalcModalSummary = buildRecalc(function(){ return getRowsFrom(modalTableBody); }, modalFeeExpectedEl, modalFeeActualEl, modalFeeActualRowEl);
 
-  // Look up a student's most recent known round/paid/end-date by walking
-  // backward week by week from `beforeMonday`, so the round can keep
-  // auto-advancing even if some weeks in between were never visited.
-  function findPriorRowForStudent(name, beforeMonday, maxWeeksBack){
-    let m = new Date(beforeMonday);
-    for (let i = 0; i < maxWeeksBack; i++){
-      m = new Date(m);
-      m.setDate(m.getDate() - 7);
-      const entry = weekEntries[isoDateStr(m)];
-      if (entry){
-        const row = (entry.rows || []).find(function(r){ return r[0] === name; });
-        if (row) return row;
-      }
-    }
-    return null;
-  }
+  // Seed with example rows on load
+  addRow(['오스카', '월', '4:00 pm', '홈랜드', '개인레슨', '50', '', '']);
+  addRow(['엘리엇', '화', '3:30 pm', '메도뱅크', '', '50', '', '']);
+  recalcSummary();
+  autoFitTable();
+  renderWeekPlanner();
 
-  // Populate the table for a given week: use its saved data if we have it,
-  // otherwise generate it fresh from the base schedule (advancing each
-  // student's round from their last known week).
-  // Primary sort: day of week (월→일). Secondary sort: time of day.
-  // Unrecognized day text sorts to the end rather than erroring out.
-  function compareByDayTime(aDay, aTime, bDay, bTime){
-    const aIdx = CANONICAL_DAY_OFFSET[aDay];
-    const bIdx = CANONICAL_DAY_OFFSET[bDay];
-    const aDayIdx = aIdx === undefined ? 99 : aIdx;
-    const bDayIdx = bIdx === undefined ? 99 : bIdx;
-    if (aDayIdx !== bDayIdx) return aDayIdx - bDayIdx;
-    return parseTimeToMinutes(aTime) - parseTimeToMinutes(bTime);
-  }
-
-  function populateWeekTable(monday){
-    tableBody.innerHTML = '';
-    const key = isoDateStr(monday);
-    const entry = weekEntries[key];
-    if (entry && entry.rows && entry.rows.length){
-      const sorted = entry.rows.slice().sort(function(a, b){ return compareByDayTime(a[1], a[2], b[1], b[2]); });
-      sorted.forEach(function(row){ addRow(row.slice()); });
-    } else if (baseSchedule.length === 0){
-      addRow();
+  // ---- Weekly archive ----
+  function updateEditingBadge(){
+    if (currentWeekId){
+      editingBadgeEl.textContent = '"' + weekTitle.value + '" 수정 중 · 저장하면 덮어씀';
     } else {
-      const sortedBase = baseSchedule.slice().sort(function(a, b){ return compareByDayTime(a[1], a[2], b[1], b[2]); });
-      sortedBase.forEach(function(base){
-        const name = base[0] || '';
-        const prev = findPriorRowForStudent(name, monday, 26);
-        let round = 1, paid = '', end = '';
-        const fee = prev ? (prev[7] || defaultFee) : defaultFee;
-        if (prev){
-          let prevRound = parseInt(prev[4], 10);
-          if (!prevRound || prevRound < 1 || prevRound > 5) prevRound = 1;
-          round = prevRound >= 5 ? 1 : prevRound + 1;
-          if (round !== 1){
-            paid = prev[5] || '';
-            end = prev[6] || '';
-          }
-        }
-        addRow([name, base[1] || '', base[2] || '', base[3] || '', String(round), paid, end, fee, '']);
-      });
+      editingBadgeEl.textContent = '';
     }
-    weekTitle.value = (entry && entry.title) ? entry.title : weekTitleFor(monday);
-    weekRangeEl.textContent = weekRangeLabelFor(monday);
+  }
+
+  function renderArchive(){
+    archiveList.innerHTML = '';
+    let cumulative = 0;
+    weeksArchive.forEach(function(w){ cumulative += (w.actualTotal || w.expectedTotal || 0); });
+    archiveCumulativeEl.textContent = weeksArchive.length ? ('누적 수업료(결석 차감 후): ' + formatWon(cumulative)) : '';
+
+    if (weeksArchive.length === 0){
+      archiveList.innerHTML = '<p class="archive-empty">저장된 주 없음. "이번 주 저장" 클릭.</p>';
+      return;
+    }
+    weeksArchive.slice().reverse().forEach(function(week){
+      const item = document.createElement('div');
+      item.className = 'archive-item';
+
+      const info = document.createElement('div');
+      info.className = 'archive-info';
+      const title = document.createElement('div');
+      title.className = 'archive-title';
+      title.textContent = week.title;
+      const date = document.createElement('div');
+      date.className = 'archive-date';
+      const totalLabel = week.actualTotal !== undefined ? (' · ' + formatWon(week.actualTotal)) : '';
+      date.textContent = week.savedAt + ' 저장 · ' + week.rows.length + '명' + totalLabel;
+      info.appendChild(title);
+      info.appendChild(date);
+
+      const actions = document.createElement('div');
+      actions.className = 'archive-actions';
+      const loadBtn = document.createElement('button');
+      loadBtn.className = 'btn-secondary';
+      loadBtn.type = 'button';
+      loadBtn.textContent = '열어서 편집';
+      loadBtn.addEventListener('click', function(){
+        openEditModal(week);
+      });
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn-ghost';
+      delBtn.type = 'button';
+      delBtn.textContent = '삭제';
+      delBtn.addEventListener('click', function(){
+        weeksArchive = weeksArchive.filter(function(w){ return w.id !== week.id; });
+        if (currentWeekId === week.id) currentWeekId = null;
+        pushState();
+        renderArchive();
+        updateEditingBadge();
+      });
+      actions.appendChild(loadBtn);
+      actions.appendChild(delBtn);
+
+      item.appendChild(info);
+      item.appendChild(actions);
+      archiveList.appendChild(item);
+    });
+  }
+
+  function openEditModal(week){
+    modalWeekTitle.value = week.title;
+    modalTableBody.innerHTML = '';
+    week.rows.forEach(function(row){ addRowTo(modalTableBody, row, recalcModalSummary); });
+    recalcModalSummary();
+    editModalOverlay.dataset.weekId = week.id;
+    editModalOverlay.classList.add('open');
+  }
+  function closeEditModal(){
+    editModalOverlay.classList.remove('open');
+    editModalOverlay.dataset.weekId = '';
+    modalTableBody.innerHTML = '';
+  }
+  modalCloseBtn.addEventListener('click', closeEditModal);
+  modalCancelBtn.addEventListener('click', closeEditModal);
+  modalAddRowBtn.addEventListener('click', function(){
+    addRowTo(modalTableBody, null, recalcModalSummary);
+    recalcModalSummary();
+  });
+  modalSaveBtn.addEventListener('click', function(){
+    const id = editModalOverlay.dataset.weekId;
+    if (!id) return;
+    const rows = getRowsFrom(modalTableBody);
+    const totals = computeTotals(rows);
+    const idx = weeksArchive.findIndex(function(w){ return w.id === id; });
+    if (idx < 0) { closeEditModal(); return; }
+    const d = new Date();
+    weeksArchive[idx] = {
+      id: id,
+      title: modalWeekTitle.value || '제목 없음',
+      savedAt: `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`,
+      rows: rows,
+      expectedTotal: totals.expected,
+      actualTotal: totals.actual
+    };
+    pushState();
+    renderArchive();
+    closeEditModal();
+  });
+
+  topSaveBtn.addEventListener('click', function(){
+    pushState();
+    const original = topSaveBtn.textContent;
+    topSaveBtn.textContent = '저장됨!';
+    setTimeout(function(){ topSaveBtn.textContent = original; }, 1200);
+  });
+
+  saveWeekBtn.addEventListener('click', function(){
+    const d = new Date();
+    const savedAt = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+    const rows = getCurrentRows();
+    const totals = computeTotals(rows);
+    const entry = {
+      id: currentWeekId || Date.now().toString(),
+      title: weekTitle.value || '제목 없음',
+      savedAt: savedAt,
+      rows: rows,
+      expectedTotal: totals.expected,
+      actualTotal: totals.actual
+    };
+    if (currentWeekId){
+      const idx = weeksArchive.findIndex(function(w){ return w.id === currentWeekId; });
+      if (idx >= 0) weeksArchive[idx] = entry; else weeksArchive.push(entry);
+    } else {
+      currentWeekId = entry.id;
+      weeksArchive.push(entry);
+    }
+    pushState();
+    renderArchive();
+    updateEditingBadge();
+    const original = saveWeekBtn.textContent;
+    saveWeekBtn.textContent = '저장됨!';
+    setTimeout(function(){ saveWeekBtn.textContent = original; }, 1200);
+  });
+
+  newWeekBtn.addEventListener('click', function(){
+    currentWeekId = null;
+    weekTitle.value = autoWeekTitle();
+    weekRangeEl.textContent = getWeekRangeLabel();
+    tableBody.innerHTML = '';
+    addRow();
     recalcSummary();
     autoFitTable();
     renderWeekPlanner();
-    scheduleAutosave();
-  }
-
-  populateWeekTable(currentWeekMonday);
-
-  function goToWeek(deltaWeeks){
-    saveCurrentWeekNow(); // flush the week we're leaving before moving
-    currentWeekMonday.setDate(currentWeekMonday.getDate() + deltaWeeks * 7);
-    populateWeekTable(currentWeekMonday);
+    updateEditingBadge();
     window.scrollTo({top:0, behavior:'smooth'});
-  }
-  prevWeekBtn.addEventListener('click', function(){ goToWeek(-1); });
-  nextWeekBtn.addEventListener('click', function(){ goToWeek(1); });
+  });
 
-  // ---- Base (fixed) schedule editor ----
-  function addBaseRowTo(tbodyEl, data){
-    data = data || ['', '', '', ''];
-    const tr = document.createElement('tr');
-    tr.appendChild(makePickerCell(data[0], 'col-name', 'name'));
-    tr.appendChild(makePickerCell(data[1], 'col-day', 'day'));
-    tr.appendChild(makeEditableCell(data[2], 'col-time'));
-    tr.appendChild(makePickerCell(data[3], 'col-place', 'place'));
-
-    const delTd = document.createElement('td');
-    delTd.className = 'col-del';
-    const delBtn = document.createElement('button');
-    delBtn.className = 'del-btn';
-    delBtn.type = 'button';
-    delBtn.innerHTML = '&#10005;';
-    delBtn.addEventListener('click', function(){ tr.remove(); });
-    delTd.appendChild(delBtn);
-    tr.appendChild(delTd);
-
-    tbodyEl.appendChild(tr);
-  }
-  function getBaseRowsFrom(tbodyEl){
-    return Array.from(tbodyEl.querySelectorAll('tr')).map(function(tr){
-      const cells = tr.querySelectorAll('td');
-      return [
-        cells[0].querySelector('.picker-text').textContent.trim(),
-        cells[1].querySelector('.picker-text').textContent.trim(),
-        cells[2].textContent.trim(),
-        cells[3].querySelector('.picker-text').textContent.trim()
-      ];
+  lastWeekBtn.addEventListener('click', function(){
+    if (weeksArchive.length === 0){
+      alert('저장된 지난주 기록이 없어요.');
+      return;
+    }
+    const lastWeek = weeksArchive[weeksArchive.length - 1];
+    currentWeekId = null;
+    weekTitle.value = autoWeekTitle();
+    weekRangeEl.textContent = getWeekRangeLabel();
+    tableBody.innerHTML = '';
+    lastWeek.rows.forEach(function(row){
+      const copy = row.slice();
+      copy[6] = '';       // 납부일은 매주 새로 입력
+      copy[7] = '';        // 참석 여부는 매주 새로 체크하도록 초기화
+      addRow(copy);
     });
-  }
-  function openBaseModal(){
-    baseModalTableBody.innerHTML = '';
-    baseSchedule.forEach(function(row){ addBaseRowTo(baseModalTableBody, row); });
-    baseModalOverlay.classList.add('open');
-  }
-  function closeBaseModal(){
-    baseModalOverlay.classList.remove('open');
-    baseModalTableBody.innerHTML = '';
-  }
-  editBaseBtn.addEventListener('click', openBaseModal);
-  baseModalCloseBtn.addEventListener('click', closeBaseModal);
-  baseModalCancelBtn.addEventListener('click', closeBaseModal);
-  baseModalAddRowBtn.addEventListener('click', function(){
-    addBaseRowTo(baseModalTableBody, null);
+    recalcSummary();
+    autoFitTable();
+    renderWeekPlanner();
+    updateEditingBadge();
+    window.scrollTo({top:0, behavior:'smooth'});
   });
-  baseModalSaveBtn.addEventListener('click', function(){
-    baseSchedule = getBaseRowsFrom(baseModalTableBody)
-      .filter(function(r){ return r[0] || r[1] || r[2] || r[3]; })
-      .sort(function(a, b){ return compareByDayTime(a[1], a[2], b[1], b[2]); });
-    pushState();
-    closeBaseModal();
-  });
+
+  renderArchive();
 
   // ---- PDF export ----
+  function formatDateDisplay(v){
+    if (!v) return '미납';
+    const d = new Date(v + 'T00:00:00');
+    if (isNaN(d)) return v;
+    return `${d.getMonth() + 1}/${d.getDate()}`;
+  }
+
   pdfBtn.addEventListener('click', function(){
     openPdfModal();
   });
@@ -1774,7 +1444,23 @@
     const originalText = pdfConfirmBtn.textContent;
     pdfConfirmBtn.textContent = '만드는 중...';
     try{
-      const canvas = await html2canvas(pdfPreviewSheet, { scale: 2, backgroundColor: '#ffffff' });
+      const toHide = document.querySelectorAll('.no-print');
+      const prevDisplay = [];
+      toHide.forEach(function(el){ prevDisplay.push(el.style.display); el.style.display = 'none'; });
+
+      const dateSwaps = [];
+      sheet.querySelectorAll('.paid-date-input').forEach(function(inp){
+        const span = document.createElement('span');
+        span.textContent = formatDateDisplay(inp.value);
+        inp.style.display = 'none';
+        inp.insertAdjacentElement('afterend', span);
+        dateSwaps.push({ inp: inp, span: span });
+      });
+
+      const canvas = await html2canvas(sheet, { scale: 2, backgroundColor: '#ffffff' });
+
+      toHide.forEach(function(el, i){ el.style.display = prevDisplay[i]; });
+      dateSwaps.forEach(function(item){ item.span.remove(); item.inp.style.display = ''; });
 
       const imgData = canvas.toDataURL('image/png');
       const { jsPDF } = window.jspdf;
@@ -1798,7 +1484,7 @@
 
       const safeTitle = (weekTitle.value || '축구교실_시간표').replace(/[\\/:*?"<>|]/g, '');
       pdf.save(safeTitle + '.pdf');
-      closePdfModal();
+      closePdfModal(true);
     } catch(err){
       alert('PDF 생성 중 문제가 발생했어요. 다시 시도해 주세요.');
       console.error(err);
