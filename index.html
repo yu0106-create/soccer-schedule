@@ -323,7 +323,6 @@
   .col-fee[data-attended="true"]{background:var(--accent-soft);}
   .col-fee[data-attended="true"] .attend-toggle{background:var(--accent);color:#fff;border-color:var(--accent);}
   .col-fee[data-attended="false"] .attend-toggle{background:#fff;color:var(--danger);border-color:var(--danger);}
-  .col-fee[data-attended="false"] .fee-amount{color:var(--danger);text-decoration:line-through;}
   .fee-amount-line{display:inline-flex;align-items:baseline;white-space:nowrap;}
   .fee-amount{display:inline-block;min-width:16px;outline:none;}
   .fee-unit{font-size:14px;color:var(--sub);margin-left:2px;}
@@ -586,7 +585,7 @@
   </div>
 
   <div class="default-fee-row no-print">
-    <span class="default-fee-label">기본 수업료(5회)</span>
+    <span class="default-fee-label">학생 기본 수업료</span>
     <input type="number" id="defaultFeeInput" min="0" step="1" value="50">
     <span class="default-fee-unit">불</span>
   </div>
@@ -1702,10 +1701,30 @@
         if (prev){
           let prevRound = parseInt(prev[4], 10);
           if (!prevRound || prevRound < 1 || prevRound > 5) prevRound = 1;
-          round = prevRound >= 5 ? 1 : prevRound + 1;
-          if (round !== 1){
+          const prevAttended = prev[8];
+          let newCycle = false;
+          if (prevAttended === 'false'){
+            // Absent last time — this round still needs to happen, so repeat
+            // the same round number rather than moving on to the next one.
+            round = prevRound;
+          } else if (prevRound >= 5){
+            round = 1;
+            newCycle = true;
+          } else {
+            round = prevRound + 1;
+          }
+          if (!newCycle){
             paid = prev[5] || '';
             end = prev[6] || '';
+            if (prevAttended === 'false' && end){
+              // A missed session pushes the whole cycle back a week —
+              // shift the target end date forward to match.
+              const d = new Date(end + 'T00:00:00');
+              if (!isNaN(d)){
+                d.setDate(d.getDate() + 7);
+                end = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+              }
+            }
           }
         }
         addRow([name, base[1] || '', base[2] || '', base[3] || '', String(round), paid, end, fee, '']);
