@@ -6,17 +6,6 @@
 <title>축구교실 주간 시간표</title>
 </head>
 <body>
-<script>
-  // iOS Safari sometimes restores a frozen snapshot of the page from its
-  // back/forward cache when you navigate away and come back, instead of
-  // actually reloading — which shows stale in-memory state even though the
-  // real saved data on disk is fine. Force a real reload when that happens.
-  window.addEventListener('pageshow', function(event){
-    if (event.persisted) {
-      window.location.reload();
-    }
-  });
-</script>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
   import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
@@ -200,24 +189,6 @@
   .btn-secondary{background:#fff;color:var(--ink);border:1px solid var(--line);}
   .btn-secondary:active{background:var(--accent-soft);}
   .btn-ghost{background:transparent;color:var(--sub);border:1px solid var(--line);}
-
-  .week-nav{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:14px;
-    margin-top:20px;
-  }
-  .week-nav-btn{
-    background:var(--panel);
-    border:1px solid var(--line);
-    color:var(--accent);
-    font-size:22px;
-    font-weight:700;
-    padding:6px 20px;
-    min-height:40px;
-  }
-  .week-nav-label{font-size:12.5px;color:var(--sub);}
 
   .sheet-head{
     margin:28px 0 4px;
@@ -614,11 +585,6 @@
     <span class="default-fee-unit">불</span>
   </div>
 
-  <div class="week-nav no-print">
-    <button type="button" class="week-nav-btn" id="prevWeekBtn">&#8249;</button>
-    <span class="week-nav-label">이전 / 다음 주</span>
-    <button type="button" class="week-nav-btn" id="nextWeekArrowBtn">&#8250;</button>
-  </div>
   <div class="sheet-head">
     <input class="week-title" id="weekTitle" value="이번 주 축구교실 시간표">
   </div>
@@ -764,8 +730,6 @@
   const weekRangeEl = document.getElementById('weekRange');
   const editingBadgeEl = document.getElementById('editingBadge');
   const nextWeekBtn = document.getElementById('nextWeekBtn');
-  const prevWeekBtn = document.getElementById('prevWeekBtn');
-  const nextWeekArrowBtn = document.getElementById('nextWeekArrowBtn');
   const pdfBtn = document.getElementById('pdfBtn');
   const saveWeekBtn = document.getElementById('saveWeekBtn');
   const lastWeekBtn = document.getElementById('lastWeekBtn');
@@ -1185,7 +1149,7 @@
     const tr = document.createElement('tr');
     tr.appendChild(makePickerCell(data[0], 'col-name', 'name'));
     tr.appendChild(makePickerCell(data[1], 'col-day', 'day'));
-    tr.appendChild(makeEditableCell(data[2], 'col-time', function(){ if (tbodyEl === tableBody){ renderWeekPlanner(); saveDraft(); } }));
+    tr.appendChild(makeEditableCell(data[2], 'col-time', function(){ if (tbodyEl === tableBody) renderWeekPlanner(); }));
     tr.appendChild(makePickerCell(data[3], 'col-place', 'place'));
     tr.appendChild(makePickerCell(data[4], 'col-session', 'session'));
     tr.appendChild(makeDateCell(data[6], 'col-paid'));
@@ -1200,7 +1164,7 @@
     delBtn.addEventListener('click', function(){
       tr.remove();
       if (onChange) onChange();
-      if (tbodyEl === tableBody){ scheduleAutoFit(); renderWeekPlanner(); refreshSessionHints(); saveDraft(); }
+      if (tbodyEl === tableBody){ scheduleAutoFit(); renderWeekPlanner(); refreshSessionHints(); }
     });
     delTd.appendChild(delBtn);
     tr.appendChild(delTd);
@@ -1226,24 +1190,7 @@
     });
   }
 
-  function addRow(data){ addRowTo(tableBody, data, recalcSummary); scheduleAutoFit(); renderWeekPlanner(); refreshSessionHints(); saveDraft(); }
-
-  const DAY_SORT_ORDER = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6 };
-  function sortTableByDay(){
-    const rows = getRowsFrom(tableBody).map(function(r, i){ return { row: r, i: i }; });
-    rows.sort(function(a, b){
-      const da = DAY_SORT_ORDER[a.row[1]] !== undefined ? DAY_SORT_ORDER[a.row[1]] : 99;
-      const db = DAY_SORT_ORDER[b.row[1]] !== undefined ? DAY_SORT_ORDER[b.row[1]] : 99;
-      if (da !== db) return da - db;
-      return a.i - b.i; // keep original relative order within the same day
-    });
-    tableBody.innerHTML = '';
-    rows.forEach(function(item){ addRowTo(tableBody, item.row, recalcSummary); });
-    scheduleAutoFit();
-    renderWeekPlanner();
-    refreshSessionHints();
-    saveDraft();
-  }
+  function addRow(data){ addRowTo(tableBody, data, recalcSummary); scheduleAutoFit(); renderWeekPlanner(); refreshSessionHints(); }
 
   addRowBtn.addEventListener('click', function(){ addRow(); recalcSummary(); });
 
@@ -1269,16 +1216,9 @@
         if (activePickerCell){
           activePickerCell.querySelector('.picker-text').textContent = opt;
         }
-        const wasMainTable = activePickerCell && tableBody.contains(activePickerCell);
-        const wasDayField = activeField === 'day';
         closePickerPopover();
-        if (wasMainTable && wasDayField){
-          sortTableByDay();
-        } else {
-          renderWeekPlanner();
-          refreshSessionHints();
-          if (wasMainTable) saveDraft();
-        }
+        renderWeekPlanner();
+        refreshSessionHints();
       });
       pickerListEl.appendChild(btn);
     });
@@ -1337,7 +1277,6 @@
         if (activeDateCell){
           activeDateCell.dataset.date = iso;
           activeDateCell.querySelector('.date-text').textContent = formatDateDisplay(iso);
-          if (tableBody.contains(activeDateCell)) saveDraft();
         }
         closeCalendarPopover();
       });
@@ -1376,7 +1315,6 @@
     if (activeDateCell){
       activeDateCell.dataset.date = '';
       activeDateCell.querySelector('.date-text').textContent = formatDateDisplay('');
-      if (tableBody.contains(activeDateCell)) saveDraft();
     }
     closeCalendarPopover();
   });
@@ -1393,19 +1331,12 @@
       fieldData[activeField].push(val);
       pushState();
     }
-    const wasMainTable = activePickerCell && tableBody.contains(activePickerCell);
-    const wasDayField = activeField === 'day';
     if (activePickerCell){
       activePickerCell.querySelector('.picker-text').textContent = val;
     }
     closePickerPopover();
-    if (wasMainTable && wasDayField){
-      sortTableByDay();
-    } else {
-      renderWeekPlanner();
-      refreshSessionHints();
-      if (wasMainTable) saveDraft();
-    }
+    renderWeekPlanner();
+    refreshSessionHints();
   }
   newOptionBtn.addEventListener('click', addNewOption);
   newOptionInput.addEventListener('keydown', function(e){
@@ -1529,10 +1460,7 @@
     };
   }
 
-  const recalcSummary = (function(){
-    const base = buildRecalc(getCurrentRows, feeExpectedEl, feeActualEl, feeActualRowEl);
-    return function(){ base(); saveDraft(); };
-  })();
+  const recalcSummary = buildRecalc(getCurrentRows, feeExpectedEl, feeActualEl, feeActualRowEl);
   recalcSummary();
 
   const recalcModalSummary = buildRecalc(function(){ return getRowsFrom(modalTableBody); }, modalFeeExpectedEl, modalFeeActualEl, modalFeeActualRowEl);
@@ -1563,55 +1491,12 @@
     return copy;
   }
 
-  // ---- Live draft persistence ----
-  // Everything typed/checked in the "이번 주" table used to only get saved
-  // when "이번 주 저장" was clicked. If the person just closed the tab or
-  // navigated away mid-edit, all of it vanished on reload. We now keep a
-  // running local draft of the live table and restore it automatically.
-  const DRAFT_KEY = 'soccer_draft_v1';
-  function saveDraft(){
-    try{
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({
-        title: weekTitle.value,
-        weekId: currentWeekId,
-        rows: getCurrentRows()
-      }));
-    } catch(e){}
-  }
-  function loadDraft(){
-    try{
-      const raw = localStorage.getItem(DRAFT_KEY);
-      if (raw) return JSON.parse(raw);
-    } catch(e){}
-    return null;
-  }
-  function clearDraft(){
-    try{ localStorage.removeItem(DRAFT_KEY); } catch(e){}
-  }
-
-  const draft = loadDraft();
-  if (draft && draft.rows && draft.rows.length){
-    weekTitle.value = draft.title || autoWeekTitle();
-    currentWeekId = draft.weekId || null;
-    draft.rows.forEach(function(row){ addRow(row); });
-  } else {
-    // No draft yet — load the recurring fixed schedule as the starting point.
-    fixedSchedule.forEach(function(row){ addRow(resetRowForNewWeek(row)); });
-  }
-  sortTableByDay();
+  // Load the recurring fixed schedule as the starting point for this session.
+  fixedSchedule.forEach(function(row){ addRow(resetRowForNewWeek(row)); });
   recalcSummary();
   autoFitTable();
   renderWeekPlanner();
   refreshSessionHints();
-
-  // Belt-and-suspenders auto-save: catches every kind of edit (picker
-  // selections, calendar date picks, typing) without having to instrument
-  // every single interaction site individually.
-  setInterval(saveDraft, 3000);
-  document.addEventListener('visibilitychange', function(){ if (document.hidden) saveDraft(); });
-  window.addEventListener('pagehide', saveDraft);
-  window.addEventListener('beforeunload', saveDraft);
-  weekTitle.addEventListener('input', saveDraft);
 
   // ---- Weekly archive ----
   function updateEditingBadge(){
@@ -1768,7 +1653,6 @@
     weekRangeEl.textContent = getWeekRangeLabel();
     tableBody.innerHTML = '';
     fixedSchedule.forEach(function(row){ addRow(resetRowForNewWeek(row)); });
-    sortTableByDay();
     recalcSummary();
     autoFitTable();
     renderWeekPlanner();
@@ -1785,78 +1669,6 @@
       saveWeekBtn.click();
     }
     newWeekBtn.click();
-  });
-
-  // ---- Free week navigation (◀ ▶ arrows) ----
-  // Silently persists whatever is on screen into the archive (no confirm
-  // dialog, no perceived delay — the actual network sync happens in the
-  // background) and then loads the adjacent week.
-  function silentSaveCurrentToArchive(){
-    const rows = getCurrentRows();
-    const hasContent = rows.some(function(r){ return r[0]; });
-    if (!hasContent) return;
-    const totals = computeTotals(rows);
-    const d = new Date();
-    const savedAt = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
-    const entry = {
-      id: currentWeekId || Date.now().toString(),
-      title: weekTitle.value || '제목 없음',
-      savedAt: savedAt,
-      rows: rows,
-      expectedTotal: totals.expected,
-      actualTotal: totals.actual
-    };
-    if (currentWeekId){
-      const idx = weeksArchive.findIndex(function(w){ return w.id === currentWeekId; });
-      if (idx >= 0) weeksArchive[idx] = entry; else weeksArchive.push(entry);
-    } else {
-      currentWeekId = entry.id;
-      weeksArchive.push(entry);
-    }
-    pushState();
-    renderArchive();
-  }
-
-  function loadWeekIntoTable(rows, title, weekId){
-    currentWeekId = weekId;
-    weekTitle.value = title;
-    weekRangeEl.textContent = getWeekRangeLabel();
-    tableBody.innerHTML = '';
-    rows.forEach(function(row){ addRow(row); });
-    sortTableByDay();
-    recalcSummary();
-    autoFitTable();
-    renderWeekPlanner();
-    refreshSessionHints();
-    updateEditingBadge();
-    saveDraft();
-  }
-
-  prevWeekBtn.addEventListener('click', function(){
-    silentSaveCurrentToArchive();
-    const curIdx = currentWeekId ? weeksArchive.findIndex(function(w){ return w.id === currentWeekId; }) : weeksArchive.length;
-    if (curIdx > 0){
-      const prevWeek = weeksArchive[curIdx - 1];
-      loadWeekIntoTable(prevWeek.rows, prevWeek.title, prevWeek.id);
-    } else {
-      alert('더 이전 기록이 없어요.');
-    }
-    window.scrollTo({top:0, behavior:'smooth'});
-  });
-
-  nextWeekArrowBtn.addEventListener('click', function(){
-    silentSaveCurrentToArchive();
-    const curIdx = currentWeekId ? weeksArchive.findIndex(function(w){ return w.id === currentWeekId; }) : weeksArchive.length;
-    if (curIdx >= 0 && curIdx < weeksArchive.length - 1){
-      const nextWeek = weeksArchive[curIdx + 1];
-      loadWeekIntoTable(nextWeek.rows, nextWeek.title, nextWeek.id);
-    } else {
-      // At the latest saved week — generate a brand-new next week from the
-      // fixed schedule, advancing each student's session automatically.
-      const rows = fixedSchedule.map(function(row){ return resetRowForNewWeek(row); });
-      loadWeekIntoTable(rows, autoWeekTitle(), null);
-    }
-    window.scrollTo({top:0, behavior:'smooth'});
   });
 
   lastWeekBtn.addEventListener('click', function(){
