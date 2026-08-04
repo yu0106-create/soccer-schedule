@@ -6,6 +6,17 @@
 <title>축구교실 주간 시간표</title>
 </head>
 <body>
+<script>
+  // iOS Safari sometimes restores a frozen snapshot of the page from its
+  // back/forward cache when you navigate away and come back, instead of
+  // actually reloading — which shows stale in-memory state even though the
+  // real saved data on disk is fine. Force a real reload when that happens.
+  window.addEventListener('pageshow', function(event){
+    if (event.persisted) {
+      window.location.reload();
+    }
+  });
+</script>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
   import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
