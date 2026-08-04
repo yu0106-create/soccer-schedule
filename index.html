@@ -585,7 +585,7 @@
   </div>
 
   <div class="default-fee-row no-print">
-    <span class="default-fee-label">학생 기본 수업료</span>
+    <span class="default-fee-label">1회당 기본 수업료</span>
     <input type="number" id="defaultFeeInput" min="0" step="1" value="50">
     <span class="default-fee-unit">불</span>
   </div>
@@ -1162,11 +1162,7 @@
     amount.textContent = fee || '';
     td.dataset.fee = String(parseFee(fee));
     amount.addEventListener('input', function(){
-      // While editable (round 1 only — see updateFeeCellDisplay), the
-      // visible number is the 5-session cycle total. Store it back as the
-      // per-session rate so every other calculation keeps using that.
-      const total = parseFee(amount.textContent);
-      td.dataset.fee = String(Math.round(total / 5));
+      td.dataset.fee = String(parseFee(amount.textContent));
       if (onChange) onChange();
     });
 
@@ -1196,18 +1192,9 @@
     if (!feeTd) return;
     const amount = feeTd.querySelector('.fee-amount');
     const amountLine = feeTd.querySelector('.fee-amount-line');
-    const roundTd = tr.querySelector('.col-round');
-    const round = roundTd ? roundTd.querySelector('.picker-text').textContent.trim() : '1';
-    const perSession = parseFee(feeTd.dataset.fee);
-    if (round === '1'){
-      amount.contentEditable = 'true';
-      amount.textContent = String(perSession * 5);
-      amountLine.style.display = '';
-    } else {
-      amount.contentEditable = 'false';
-      amount.textContent = '';
-      amountLine.style.display = 'none';
-    }
+    amount.contentEditable = 'true';
+    amount.textContent = feeTd.dataset.fee || '';
+    amountLine.style.display = '';
   }
 
   // ---- Session round (1~5) & fixed-schedule date math ----
