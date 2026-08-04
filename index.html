@@ -201,6 +201,24 @@
   .btn-secondary:active{background:var(--accent-soft);}
   .btn-ghost{background:transparent;color:var(--sub);border:1px solid var(--line);}
 
+  .week-nav{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:14px;
+    margin-top:20px;
+  }
+  .week-nav-btn{
+    background:var(--panel);
+    border:1px solid var(--line);
+    color:var(--accent);
+    font-size:22px;
+    font-weight:700;
+    padding:6px 20px;
+    min-height:40px;
+  }
+  .week-nav-label{font-size:12.5px;color:var(--sub);}
+
   .sheet-head{
     margin:28px 0 4px;
   }
@@ -596,6 +614,11 @@
     <span class="default-fee-unit">불</span>
   </div>
 
+  <div class="week-nav no-print">
+    <button type="button" class="week-nav-btn" id="prevWeekBtn">&#8249;</button>
+    <span class="week-nav-label">이전 / 다음 주</span>
+    <button type="button" class="week-nav-btn" id="nextWeekArrowBtn">&#8250;</button>
+  </div>
   <div class="sheet-head">
     <input class="week-title" id="weekTitle" value="이번 주 축구교실 시간표">
   </div>
@@ -741,6 +764,8 @@
   const weekRangeEl = document.getElementById('weekRange');
   const editingBadgeEl = document.getElementById('editingBadge');
   const nextWeekBtn = document.getElementById('nextWeekBtn');
+  const prevWeekBtn = document.getElementById('prevWeekBtn');
+  const nextWeekArrowBtn = document.getElementById('nextWeekArrowBtn');
   const pdfBtn = document.getElementById('pdfBtn');
   const saveWeekBtn = document.getElementById('saveWeekBtn');
   const lastWeekBtn = document.getElementById('lastWeekBtn');
@@ -1760,6 +1785,78 @@
       saveWeekBtn.click();
     }
     newWeekBtn.click();
+  });
+
+  // ---- Free week navigation (◀ ▶ arrows) ----
+  // Silently persists whatever is on screen into the archive (no confirm
+  // dialog, no perceived delay — the actual network sync happens in the
+  // background) and then loads the adjacent week.
+  function silentSaveCurrentToArchive(){
+    const rows = getCurrentRows();
+    const hasContent = rows.some(function(r){ return r[0]; });
+    if (!hasContent) return;
+    const totals = computeTotals(rows);
+    const d = new Date();
+    const savedAt = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+    const entry = {
+      id: currentWeekId || Date.now().toString(),
+      title: weekTitle.value || '제목 없음',
+      savedAt: savedAt,
+      rows: rows,
+      expectedTotal: totals.expected,
+      actualTotal: totals.actual
+    };
+    if (currentWeekId){
+      const idx = weeksArchive.findIndex(function(w){ return w.id === currentWeekId; });
+      if (idx >= 0) weeksArchive[idx] = entry; else weeksArchive.push(entry);
+    } else {
+      currentWeekId = entry.id;
+      weeksArchive.push(entry);
+    }
+    pushState();
+    renderArchive();
+  }
+
+  function loadWeekIntoTable(rows, title, weekId){
+    currentWeekId = weekId;
+    weekTitle.value = title;
+    weekRangeEl.textContent = getWeekRangeLabel();
+    tableBody.innerHTML = '';
+    rows.forEach(function(row){ addRow(row); });
+    sortTableByDay();
+    recalcSummary();
+    autoFitTable();
+    renderWeekPlanner();
+    refreshSessionHints();
+    updateEditingBadge();
+    saveDraft();
+  }
+
+  prevWeekBtn.addEventListener('click', function(){
+    silentSaveCurrentToArchive();
+    const curIdx = currentWeekId ? weeksArchive.findIndex(function(w){ return w.id === currentWeekId; }) : weeksArchive.length;
+    if (curIdx > 0){
+      const prevWeek = weeksArchive[curIdx - 1];
+      loadWeekIntoTable(prevWeek.rows, prevWeek.title, prevWeek.id);
+    } else {
+      alert('더 이전 기록이 없어요.');
+    }
+    window.scrollTo({top:0, behavior:'smooth'});
+  });
+
+  nextWeekArrowBtn.addEventListener('click', function(){
+    silentSaveCurrentToArchive();
+    const curIdx = currentWeekId ? weeksArchive.findIndex(function(w){ return w.id === currentWeekId; }) : weeksArchive.length;
+    if (curIdx >= 0 && curIdx < weeksArchive.length - 1){
+      const nextWeek = weeksArchive[curIdx + 1];
+      loadWeekIntoTable(nextWeek.rows, nextWeek.title, nextWeek.id);
+    } else {
+      // At the latest saved week — generate a brand-new next week from the
+      // fixed schedule, advancing each student's session automatically.
+      const rows = fixedSchedule.map(function(row){ return resetRowForNewWeek(row); });
+      loadWeekIntoTable(rows, autoWeekTitle(), null);
+    }
+    window.scrollTo({top:0, behavior:'smooth'});
   });
 
   lastWeekBtn.addEventListener('click', function(){
