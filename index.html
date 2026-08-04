@@ -631,6 +631,7 @@
   </div>
 
   <div class="export-row no-print">
+    <button class="btn-primary" id="nextWeekBtn">다음 주로 넘어가기</button>
     <button class="btn-primary" id="pdfBtn">PDF로 저장</button>
     <button class="btn-secondary" id="saveWeekBtn">이번 주 저장</button>
     <button class="btn-secondary" id="lastWeekBtn">지난주 시간표 그대로 불러오기</button>
@@ -739,6 +740,7 @@
   const weekMeta = document.getElementById('weekMeta');
   const weekRangeEl = document.getElementById('weekRange');
   const editingBadgeEl = document.getElementById('editingBadge');
+  const nextWeekBtn = document.getElementById('nextWeekBtn');
   const pdfBtn = document.getElementById('pdfBtn');
   const saveWeekBtn = document.getElementById('saveWeekBtn');
   const lastWeekBtn = document.getElementById('lastWeekBtn');
@@ -1201,6 +1203,23 @@
 
   function addRow(data){ addRowTo(tableBody, data, recalcSummary); scheduleAutoFit(); renderWeekPlanner(); refreshSessionHints(); saveDraft(); }
 
+  const DAY_SORT_ORDER = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6 };
+  function sortTableByDay(){
+    const rows = getRowsFrom(tableBody).map(function(r, i){ return { row: r, i: i }; });
+    rows.sort(function(a, b){
+      const da = DAY_SORT_ORDER[a.row[1]] !== undefined ? DAY_SORT_ORDER[a.row[1]] : 99;
+      const db = DAY_SORT_ORDER[b.row[1]] !== undefined ? DAY_SORT_ORDER[b.row[1]] : 99;
+      if (da !== db) return da - db;
+      return a.i - b.i; // keep original relative order within the same day
+    });
+    tableBody.innerHTML = '';
+    rows.forEach(function(item){ addRowTo(tableBody, item.row, recalcSummary); });
+    scheduleAutoFit();
+    renderWeekPlanner();
+    refreshSessionHints();
+    saveDraft();
+  }
+
   addRowBtn.addEventListener('click', function(){ addRow(); recalcSummary(); });
 
   // ---- Shared picker popover ----
@@ -1226,10 +1245,15 @@
           activePickerCell.querySelector('.picker-text').textContent = opt;
         }
         const wasMainTable = activePickerCell && tableBody.contains(activePickerCell);
+        const wasDayField = activeField === 'day';
         closePickerPopover();
-        renderWeekPlanner();
-        refreshSessionHints();
-        if (wasMainTable) saveDraft();
+        if (wasMainTable && wasDayField){
+          sortTableByDay();
+        } else {
+          renderWeekPlanner();
+          refreshSessionHints();
+          if (wasMainTable) saveDraft();
+        }
       });
       pickerListEl.appendChild(btn);
     });
@@ -1345,13 +1369,18 @@
       pushState();
     }
     const wasMainTable = activePickerCell && tableBody.contains(activePickerCell);
+    const wasDayField = activeField === 'day';
     if (activePickerCell){
       activePickerCell.querySelector('.picker-text').textContent = val;
     }
     closePickerPopover();
-    renderWeekPlanner();
-    refreshSessionHints();
-    if (wasMainTable) saveDraft();
+    if (wasMainTable && wasDayField){
+      sortTableByDay();
+    } else {
+      renderWeekPlanner();
+      refreshSessionHints();
+      if (wasMainTable) saveDraft();
+    }
   }
   newOptionBtn.addEventListener('click', addNewOption);
   newOptionInput.addEventListener('keydown', function(e){
@@ -1544,6 +1573,7 @@
     // No draft yet — load the recurring fixed schedule as the starting point.
     fixedSchedule.forEach(function(row){ addRow(resetRowForNewWeek(row)); });
   }
+  sortTableByDay();
   recalcSummary();
   autoFitTable();
   renderWeekPlanner();
@@ -1713,12 +1743,23 @@
     weekRangeEl.textContent = getWeekRangeLabel();
     tableBody.innerHTML = '';
     fixedSchedule.forEach(function(row){ addRow(resetRowForNewWeek(row)); });
+    sortTableByDay();
     recalcSummary();
     autoFitTable();
     renderWeekPlanner();
     refreshSessionHints();
     updateEditingBadge();
     window.scrollTo({top:0, behavior:'smooth'});
+  });
+
+  nextWeekBtn.addEventListener('click', function(){
+    if (getCurrentRows().length > 0){
+      if (!confirm('지금 표를 "이번 주 저장"에 기록으로 남기고 다음 주로 넘어갈까요?')){
+        return;
+      }
+      saveWeekBtn.click();
+    }
+    newWeekBtn.click();
   });
 
   lastWeekBtn.addEventListener('click', function(){
