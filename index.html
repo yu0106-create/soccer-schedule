@@ -649,7 +649,7 @@
       <span class="week-title" style="font-size:19px;">기본 시간표 편집</span>
       <button type="button" class="modal-close" id="baseModalCloseBtn">&times;</button>
     </div>
-    <p class="lead" style="margin:0 0 14px;">여기서 고친 내용은 다음 주로 이동할 때부터 자동 적용됨. 지금 표에는 바로 반영되지 않음.</p>
+    <p class="lead" style="margin:0 0 14px;">지금 보고 있는 주가 아직 저장 전이면 여기서 고친 내용이 바로 반영됨. 이미 저장한 주는 그대로 유지되고, 그다음 주부터 새 내용이 적용됨.</p>
     <div class="sheet">
       <div class="table-scroll">
         <table>
@@ -1811,6 +1811,17 @@
       .sort(function(a, b){ return compareByDayTime(a[1], a[2], b[1], b[2]); });
     pushGlobalState();
     closeBaseModal();
+    // If the week currently on screen hasn't been saved yet, its rows were
+    // generated from the OLD base schedule before this edit. Refresh it now
+    // so a newly added student starts at 1회차 on their actual first
+    // (current) week, instead of only showing up — starting from 1회차 —
+    // once you move to the next week. Weeks that were already saved
+    // (weekEntries has an entry for them) are intentionally left untouched,
+    // so no previously saved data is ever overwritten or lost.
+    const currentKey = isoDateStr(currentWeekMonday);
+    if (!weekEntries[currentKey]){
+      populateWeekTable(currentWeekMonday);
+    }
   });
 
   // ---- PDF export ----
