@@ -777,8 +777,6 @@
   const cashActualEl = document.getElementById('cashActual');
   const cashActualRowEl = document.getElementById('cashActualRow');
 
-  const CACHE_KEY = 'soccer_state_cache_v1';
-
   const DEFAULTS = {
     name:  ['오스카','엘리엇','임레온','브라이언','도라','엠레','래미','이안','샤르베시','앤쓴'],
     day:   ['월','화','수','목','금','토','일'],
@@ -798,29 +796,20 @@
     ['샤르베시', '일', '7:00 am', '에릭 파크']
   ];
 
-  function loadCache(){
-    try{
-      const raw = localStorage.getItem(CACHE_KEY);
-      if (raw) return JSON.parse(raw);
-    } catch(e){}
-    return null;
-  }
-  function saveCache(state){
-    try{ localStorage.setItem(CACHE_KEY, JSON.stringify(state)); } catch(e){}
-  }
-
-  const cached = loadCache();
-  let fieldData = cached && cached.locations ? cached.locations : {
+  // 이 브라우저(기기)의 localStorage는 이제 전혀 쓰지 않는다. 화면에는
+  // Firestore에서 실제로 읽어온 값만 표시하며, 그 전까지는 "불러오는 중"
+  // 상태로 대기한다. 기본값은 Firestore 연결 전 잠깐 보여줄 뼈대일 뿐,
+  // 저장이나 판단의 기준으로는 쓰이지 않는다.
+  let fieldData = {
     name: DEFAULTS.name.slice(), day: DEFAULTS.day.slice(),
     place: DEFAULTS.place.slice()
   };
-  ['name','day','place'].forEach(function(f){ if(!fieldData[f]) fieldData[f] = []; });
   // weekEntries is keyed by each week's Monday date ("YYYY-MM-DD") so the
   // ◀ ▶ arrows can jump straight to any week's saved data (or fall back to
   // generating it from the base schedule if that week hasn't been visited).
-  let weekEntries = (cached && cached.weekEntries && typeof cached.weekEntries === 'object') ? cached.weekEntries : {};
-  let baseSchedule = (cached && Array.isArray(cached.baseSchedule)) ? cached.baseSchedule : DEFAULT_BASE_SCHEDULE.map(function(r){ return r.slice(); });
-  let defaultFee = cached && cached.defaultFee ? cached.defaultFee : '50';
+  let weekEntries = {};
+  let baseSchedule = DEFAULT_BASE_SCHEDULE.map(function(r){ return r.slice(); });
+  let defaultFee = '50';
   defaultFeeInput.value = defaultFee;
   defaultFeeInput.addEventListener('change', function(){
     const val = String(parseInt(defaultFeeInput.value, 10) || 0);
@@ -828,7 +817,6 @@
     defaultFee = val;
     pushGlobalState();
   });
-  let localUpdatedAt = cached && cached.updatedAt ? cached.updatedAt : 0;
 
   // Firestore does not allow arrays nested inside arrays. Internally each row
   // is a plain array (name/day/time/place/round/paid/end/fee/attended), and
@@ -861,17 +849,12 @@
     return (rows || []).map(baseRowFromFsObj);
   }
 
-  function saveLocalCache(){
-    saveCache({ locations: fieldData, weekEntries: weekEntries, baseSchedule: baseSchedule, defaultFee: defaultFee, updatedAt: localUpdatedAt });
-  }
-
   // Small, rarely-changing state (fieldData/baseSchedule/defaultFee). Cheap
-  // to save regardless of how many weeks have been visited.
+  // to save regardless of how many weeks have been visited. Firestore가
+  // 유일한 저장소 — 이 브라우저에는 아무것도 남기지 않는다.
   function pushGlobalState(){
-    localUpdatedAt = Date.now();
-    saveLocalCache();
     if (window._fbSaveGlobal){
-      const payload = { locations: fieldData, baseSchedule: baseScheduleToFirestore(baseSchedule), defaultFee: defaultFee, updatedAt: localUpdatedAt };
+      const payload = { locations: fieldData, baseSchedule: baseScheduleToFirestore(baseSchedule), defaultFee: defaultFee, updatedAt: Date.now() };
       return Promise.resolve().then(function(){ return window._fbSaveGlobal(payload); })
         .catch(function(err){ console.error('global sync save failed', err); throw err; });
     }
@@ -880,9 +863,9 @@
 
   // A single week's data, saved to its own small Firestore document — this
   // is what actually happens when the person edits a week and hits 저장,
-  // so it stays fast no matter how many past weeks have piled up.
+  // so it stays fast no matter how many past weeks have piled up. Firestore가
+  // 유일한 저장소.
   function pushWeekState(isoDate){
-    saveLocalCache();
     if (window._fbSaveWeek){
       const entry = weekEntries[isoDate] || { title: '', rows: [], updatedAt: Date.now() };
       const payload = { title: entry.title || '', rows: (entry.rows || []).map(rowToFsObj), updatedAt: entry.updatedAt || Date.now() };
@@ -892,18 +875,35 @@
     return Promise.resolve();
   }
 
+  // 화면을 그리기 전에 Firestore의 전역 설정(이름/기본 시간표/기본 수업료)과
+  // 지난 주간 데이터를 모두 한 번은 읽어와야 한다. 이 두 가지가 모두
+  // 도착해야만 (그리고 최초 1회만) 실제 화면을 그린다 — 그전에는 "불러오는
+  // 중" 상태로 대기시켜서, 기기에 남아있던 옛날 값이 잠깐이라도 보이는
+  // 일이 없게 한다.
+  const firestoreReady = { global: false, weeks: false };
+  let hasRenderedOnce = false;
+  function tryInitialRender(){
+    if (!hasRenderedOnce && firestoreReady.global && firestoreReady.weeks){
+      hasRenderedOnce = true;
+      populateWeekTable(currentWeekMonday);
+      saveWeekBtn.disabled = false;
+      prevWeekBtn.disabled = false;
+      nextWeekBtn.disabled = false;
+    }
+  }
+  // Firebase 연결 자체가 안 되는 경우(네트워크 차단 등) 화면이 영원히
+  // "불러오는 중"에 멈춰있지 않도록, 일정 시간 뒤에는 기본값으로라도
+  // 한 번은 그려준다.
+  setTimeout(function(){
+    firestoreReady.global = true;
+    firestoreReady.weeks = true;
+    tryInitialRender();
+  }, 8000);
+
   window.addEventListener('fb-ready', function(){
     if (window._fbSubscribeGlobal){
       window._fbSubscribeGlobal(function(remote){
         if (remote){
-          const remoteUpdatedAt = remote.updatedAt || 0;
-          if (remoteUpdatedAt < localUpdatedAt){
-            // Our cached local save is newer than what's on the server (e.g. the
-            // previous write hadn't finished before a refresh). Don't let the
-            // stale remote copy erase it — push our local copy again instead.
-            pushGlobalState();
-            return;
-          }
           fieldData = remote.locations || fieldData;
           ['name','day','place'].forEach(function(f){ if(!fieldData[f]) fieldData[f] = []; });
           if (remote.baseSchedule) baseSchedule = baseScheduleFromFirestore(remote.baseSchedule);
@@ -911,32 +911,32 @@
             defaultFee = remote.defaultFee;
             defaultFeeInput.value = defaultFee;
           }
-          localUpdatedAt = remoteUpdatedAt;
-          saveLocalCache();
-        } else {
+        } else if (!firestoreReady.global){
+          // Firestore에 저장된 게 하나도 없는 최초 실행 — 기본값으로 문서를 만들어 둔다.
           pushGlobalState();
         }
+        firestoreReady.global = true;
+        tryInitialRender();
       });
+    } else {
+      firestoreReady.global = true;
+      tryInitialRender();
     }
     if (window._fbLoadAllWeeks){
       window._fbLoadAllWeeks().then(function(remoteWeeks){
-        const currentKey = isoDateStr(currentWeekMonday);
-        let changed = false;
         Object.keys(remoteWeeks).forEach(function(key){
-          if (key === currentKey) return; // never clobber what's on screen right now
           const r = remoteWeeks[key] || {};
-          const remoteUpdatedAt = r.updatedAt || 0;
-          const localEntry = weekEntries[key];
-          const localWeekUpdatedAt = (localEntry && localEntry.updatedAt) ? localEntry.updatedAt : 0;
-          if (!localEntry || remoteUpdatedAt > localWeekUpdatedAt){
-            weekEntries[key] = { title: r.title || '', rows: (r.rows || []).map(rowFromFsObj), updatedAt: remoteUpdatedAt };
-            changed = true;
-          }
+          weekEntries[key] = { title: r.title || '', rows: (r.rows || []).map(rowFromFsObj), updatedAt: r.updatedAt || 0 };
         });
-        if (changed) saveLocalCache();
       }).catch(function(err){
         console.error('failed to load weeks from Firestore', err);
+      }).finally(function(){
+        firestoreReady.weeks = true;
+        tryInitialRender();
       });
+    } else {
+      firestoreReady.weeks = true;
+      tryInitialRender();
     }
   });
 
@@ -1724,7 +1724,14 @@
     renderWeekPlanner();
   }
 
-  populateWeekTable(currentWeekMonday);
+  // Firestore에서 데이터가 도착하기 전까지는 표를 그리지 않고 로딩 상태만
+  // 보여준다 (tryInitialRender가 준비되는 즉시 실제 데이터로 populateWeekTable 호출).
+  tableBody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px 10px;color:var(--sub);">불러오는 중...</td></tr>';
+  weekRangeEl.textContent = weekRangeLabelFor(currentWeekMonday);
+  saveWeekBtn.disabled = true;
+  prevWeekBtn.disabled = true;
+  nextWeekBtn.disabled = true;
+  tryInitialRender();
 
   function goToWeek(deltaWeeks){
     saveCurrentWeekNow(); // flush the week we're leaving before moving
